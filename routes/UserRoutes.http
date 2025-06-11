@@ -1,0 +1,76 @@
+### POST - Create User
+POST http://localhost:3001/api/user/signup
+Content-Type: application/json
+
+{
+  "email": "jane.doe@example.com",
+  "phone_number": "+1234567890",
+  "password": "SecurePass123!",
+  "first_name": "Jane",
+  "last_name": "Doe",
+  "profile_picture": "https://example.com/images/jane.jpg",
+  "date_of_birth": "1995-07-15",
+  "gender": "FEMALE",
+  "bio": "Passionate traveler and photographer. Coffee enthusiast ☕."
+}
+
+### POST - Login User
+POST http://localhost:3001/api/user/login
+Content-Type: application/json
+
+{
+  "email": "jane.doe@example.com",
+  "password": "SecurePass123!"
+}
+
+### GET - Get User Details
+@id = 8488645b-1f93-4c75-84a9-446ef6260f28
+@token = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4NDg4NjQ1Yi0xZjkzLTRjNzUtODRhOS00NDZlZjYyNjBmMjgiLCJlbWFpbCI6ImphbmUuZG9lQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ5NjM5ODM3LCJleHAiOjE3NDk3MjYyMzd9._RCZpYANoJUDLtB6sx5f-ii2717Vza9N7YAf0aI-lnE
+
+GET http://localhost:3001/api/user/{{id}}
+Authorization: {{token}}
+Content-Type: application/json
+
+
+### POST - Update User Details
+PUT http://localhost:3001/api/user/{{id}}
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "phone_number": "9347214123"
+}
+
+### DELETE - DELETE User
+DELETE http://localhost:3001/api/user/{{id}}
+Authorization: {{token}}
+
+### PUT - Change Password
+PUT http://localhost:3001/api/user/reset-password/{{id}}
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "currentPassword": "SecurePass123!",
+  "newPassword": "SecurePass321!"
+}
+
+
+### PUT - Update User Preferences
+PUT http://localhost:3001/api/user/preferences/{{id}}
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "allow_smoking": true,
+  "music_genre": ["Rock", "Pop"],
+  "has_pets": true,
+  "is_pet_friendly": true,
+  "communication_preference": "CHATTY",
+  "seat_preference": "Window"
+}
+
+###GET - Get User Preferences
+GET http://localhost:3001/api/user/preferences/{{id}}
+Authorization: {{token}}
+Content-Type: application/json
