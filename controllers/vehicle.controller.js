@@ -1,4 +1,4 @@
-const VehicleService = require("../services/VehicleService");
+const VehicleService = require("../services/vehicle.service");
 const vehicleController = {
     async getVehicleById(req, res, next) {
         try {

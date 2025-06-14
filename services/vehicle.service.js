@@ -1,4 +1,4 @@
-const Vehicle = require("../models/Vehicle");
+const Vehicle = require("../models/vehicle.model");
 
 class VehicleService {
     static async getVehicleById(vehicleId) {
@@ -63,12 +63,12 @@ class VehicleService {
             }
 
             // If license plate is being updated, check if it already exists
-            if (vehicleData.license_plate && vehicleData.license_plate !== existingVehicle.license_plate) {
-                const plateExists = await Vehicle.findByLicensePlate(vehicleData.license_plate);
-                if (plateExists) {
-                    throw new Error('License plate already exists');
-                }
-            }
+            // if (vehicleData.license_plate && vehicleData.license_plate !== existingVehicle.license_plate) {
+            //     const plateExists = await Vehicle.findByLicensePlate(vehicleData.license_plate);
+            //     if (plateExists) {
+            //         throw new Error('License plate already exists');
+            //     }
+            // }
 
             // Validate year if provided
             if (vehicleData.year) {

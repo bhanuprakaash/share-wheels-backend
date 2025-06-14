@@ -21,8 +21,16 @@ app.use(express.urlencoded({extended: true}));
 async function startServer() {
     try {
         await db.connect();
-        const routes = require('./routes');
-        app.use('/api', routes);
+        const routes = require('./routes/index.routes');
+        // app.use('/api', routes);
+        try {
+            const routes = require('./routes/index.routes'); // Dynamically load routes
+            app.use('/api', routes); // Mount routes
+        } catch (routeError) {
+            console.error('Error loading or applying routes. This might be due to a missing callback function in a route definition:', routeError.message);
+            // Re-throw the error to ensure the server does not start with broken routes
+            throw routeError;
+        }
 
         app.use('*', (req, res) => {
             res.status(404).json({

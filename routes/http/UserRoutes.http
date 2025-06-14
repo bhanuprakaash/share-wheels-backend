@@ -24,8 +24,8 @@ Content-Type: application/json
 }
 
 ### GET - Get User Details
-@id = 8488645b-1f93-4c75-84a9-446ef6260f28
-@token = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4NDg4NjQ1Yi0xZjkzLTRjNzUtODRhOS00NDZlZjYyNjBmMjgiLCJlbWFpbCI6ImphbmUuZG9lQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ5NjM5ODM3LCJleHAiOjE3NDk3MjYyMzd9._RCZpYANoJUDLtB6sx5f-ii2717Vza9N7YAf0aI-lnE
+@id = 74eb3166-1db9-4f58-a494-6b7ca0d05076
+@token = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3NGViMzE2Ni0xZGI5LTRmNTgtYTQ5NC02YjdjYTBkMDUwNzYiLCJlbWFpbCI6ImphbmUuZG9lQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ5ODM1NjQ3LCJleHAiOjE3NDk5MjIwNDd9.x2otWv7JIyNlQVmQHvvzkbEcNuFcBtQm7lDuI9nP9CI
 
 GET http://localhost:3001/api/user/{{id}}
 Authorization: {{token}}

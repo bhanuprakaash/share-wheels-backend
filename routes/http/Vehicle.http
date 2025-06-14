@@ -1,7 +1,7 @@
 ### POST - create vehicle
-@id = 8488645b-1f93-4c75-84a9-446ef6260f28
-@vehicleId = 22bce750-564c-4b4d-adf8-35f8cf46c7ef
-@token = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4NDg4NjQ1Yi0xZjkzLTRjNzUtODRhOS00NDZlZjYyNjBmMjgiLCJlbWFpbCI6ImphbmUuZG9lQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ5NjU3MDkwLCJleHAiOjE3NDk3NDM0OTB9.a1aXpvfcoV-8fXYXCmH5IuiEGkLPDm0zdVQdG5uWCYw
+@id = 74eb3166-1db9-4f58-a494-6b7ca0d05076
+@vehicleId = 2eb822fa-71cd-4528-9b78-e4f4570d29ab
+@token = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3NGViMzE2Ni0xZGI5LTRmNTgtYTQ5NC02YjdjYTBkMDUwNzYiLCJlbWFpbCI6ImphbmUuZG9lQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ5ODM1NjQ3LCJleHAiOjE3NDk5MjIwNDd9.x2otWv7JIyNlQVmQHvvzkbEcNuFcBtQm7lDuI9nP9CI
 
 POST http://localhost:3001/api/vehicle
 Authorization: {{token}}
