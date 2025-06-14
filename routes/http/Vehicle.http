@@ -1,0 +1,43 @@
+### POST - create vehicle
+@id = 74eb3166-1db9-4f58-a494-6b7ca0d05076
+@vehicleId = 2eb822fa-71cd-4528-9b78-e4f4570d29ab
+@token = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3NGViMzE2Ni0xZGI5LTRmNTgtYTQ5NC02YjdjYTBkMDUwNzYiLCJlbWFpbCI6ImphbmUuZG9lQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ5ODM1NjQ3LCJleHAiOjE3NDk5MjIwNDd9.x2otWv7JIyNlQVmQHvvzkbEcNuFcBtQm7lDuI9nP9CI
+
+POST http://localhost:3001/api/vehicle
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "make": "VolksVegan",
+  "model": "Tony",
+  "year": 2022,
+  "license_plate": "B22343",
+  "color": "Silver",
+  "seating_capacity": 2,
+  "vehicle_ai_image": "image_url"
+}
+
+
+### GET - get vehicled by vehicle id
+GET http://localhost:3001/api/vehicle/{{vehicleId}}
+Authorization: {{token}}
+
+### GET - get user vehicles
+GET http://localhost:3001/api/vehicle/my-vehicles
+Authorization: {{token}}
+
+### PUT - update vehicle data
+PUT http://localhost:3001/api/vehicle/{{vehicleId}}
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "make": "Morris Garage",
+  "model": "Breeze",
+  "year": 2022,
+  "license_plate": "B2C4343"
+}
+
+###DELETE - delete vehicle
+DELETE http://localhost:3001/api/vehicle/{{vehicleId}}
+Authorization: {{token}}

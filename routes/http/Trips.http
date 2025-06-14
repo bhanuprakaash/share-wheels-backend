@@ -1,0 +1,99 @@
+@id = 74eb3166-1db9-4f58-a494-6b7ca0d05076
+@vehicleId = 2eb822fa-71cd-4528-9b78-e4f4570d29ab
+@token = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI3NGViMzE2Ni0xZGI5LTRmNTgtYTQ5NC02YjdjYTBkMDUwNzYiLCJlbWFpbCI6ImphbmUuZG9lQGV4YW1wbGUuY29tIiwiaWF0IjoxNzQ5ODM1NjQ3LCJleHAiOjE3NDk5MjIwNDd9.x2otWv7JIyNlQVmQHvvzkbEcNuFcBtQm7lDuI9nP9CI
+@tripId = 99b1dc8f-6b65-4c5a-ab05-0d3fc5a32e51
+### POST - Create a Trip with waypoints
+POST http://localhost:3001/api/trip
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "vehicle_id": "2eb822fa-71cd-4528-9b78-e4f4570d29ab",
+  "driver_id": "74eb3166-1db9-4f58-a494-6b7ca0d05076",
+  "start_location_name": "Jayanagar 4th Block",
+  "start_address_line1": "4th Block, Jayanagar, Bengaluru, Karnataka 560041",
+  "start_geopoint": {"lat": 12.9298, "lng": 77.5847},
+  "end_location_name": "Koramangala Forum Mall",
+  "end_address_line1": "Forum Mall, Koramangala, Bengaluru, Karnataka 560034",
+  "end_geopoint": {"lat": 12.9345, "lng": 77.6109},
+  "departure_time": "2025-06-15T10:00:00Z",
+  "estimated_arrival_time": "2025-06-15T10:50:00Z",
+  "available_seats": 2,
+  "price_per_seat": 120.00,
+  "trip_description": "Convenient ride from Jayanagar to Koramangala, with a stop near Lal Bagh.",
+  "polyline_path": "optional_encoded_polyline_string",
+  "waypoints": [
+    {
+      "location_name": "Lal Bagh West Gate",
+      "address_line1": "Lal Bagh Rd, Basavanagudi, Bengaluru, Karnataka 560004",
+      "geopoint": {"lat": 12.9507, "lng": 77.5796},
+      "sequence_order": 1,
+      "estimated_arrival_time": "2025-06-15T10:20:00Z"
+    }
+  ]
+}
+
+### GET - Get Trip based on tripId
+GET http://localhost:3001/api/trip/{{tripId}}
+Authorization: {{token}}
+
+### PUT - Update Trip based on tripId
+PUT http://localhost:3001/api/trip/{{tripId}}
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "vehicle_id": "2eb822fa-71cd-4528-9b78-e4f4570d29ab",
+  "start_location_name": "Downtown Suits Office - Updated",
+  "start_address_line1": "123 Main St, Bangalore",
+  "start_geopoint": {"lat": 12.9716, "lng": 77.5946},
+  "end_location_name": "Airport",
+  "end_address_line1": "456 Airport Rd, Bangalore",
+  "end_geopoint": {"lat": 13.1986, "lng": 77.7066},
+  "departure_time": "2025-06-15T08:00:00Z",
+  "estimated_arrival_time": "2025-06-15T09:30:00Z",
+  "available_seats": 3,
+  "price_per_seat": 150.00,
+  "trip_description": "Comfortable ride to airport with stops",
+  "polyline_path": "optional_encoded_polyline_string",
+  "waypoints": [
+    {
+      "location_name": "Mall Stop",
+      "address_line1": "789 Mall Road, Bangalore",
+      "geopoint": {"lat": 13.0827, "lng": 77.6094},
+      "sequence_order": 1,
+      "estimated_arrival_time": "2025-06-15T08:30:00Z"
+    },
+    {
+      "location_name": "Hotel Manasa",
+      "address_line1": "321 Hotel St, Bangalore",
+      "geopoint": {"lat": 13.1234, "lng": 77.6543},
+      "sequence_order": 2,
+      "estimated_arrival_time": "2025-06-15T08:45:00Z"
+    },
+    {
+      "location_name": "Byappanahalli Metro Station",
+      "address_line1": "Byappanahalli, Indiranagar, Bengaluru, Karnataka 560038",
+      "geopoint": {"lat": 12.9904, "lng": 77.6596},
+      "sequence_order": 3,
+      "estimated_arrival_time": "2025-06-15T09:00:00Z"
+    }
+  ]
+}
+
+###PATCH - update the status
+PATCH http://localhost:3001/api/trip/{{tripId}}/status
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "status": "COMPLETED"
+}
+
+### GET - get all trips based on filters
+GET http://localhost:3001/api/trip
+Authorization: {{token}}
+
+### DELETE - Delete Trip
+DELETE http://localhost:3001/api/trip/{{tripId}}
+Authorization: {{token}}

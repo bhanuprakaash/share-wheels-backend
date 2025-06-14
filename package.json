@@ -2,6 +2,7 @@
   "name": "share-wheels-backend",
   "version": "0.0.0",
   "private": true,
+  "main": "app.js",
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js"
@@ -19,5 +20,9 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
+  },
+  "nodemonConfig": {
+    "ignore": ["node_modules/","*.log"],
+    "delay": "2500"
   }
 }
