@@ -20,7 +20,7 @@ Content-Type: application/json
 
 {
   "email": "jane.doe@example.com",
-  "password": "SecurePass123!"
+  "password": "SecurePass321!"
 }
 
 ### GET - Get User Details

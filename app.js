@@ -15,55 +15,58 @@ let server;
 app.use(helmet());
 app.use(cors());
 app.use(morgan('combined'));
-app.use(express.json({limit: '10mb'}));
-app.use(express.urlencoded({extended: true}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 
 async function startServer() {
+  try {
+    await db.connect();
+    const routes = require('./routes/index.routes');
+    // app.use('/api', routes);
     try {
-        await db.connect();
-        const routes = require('./routes/index.routes');
-        // app.use('/api', routes);
-        try {
-            const routes = require('./routes/index.routes'); // Dynamically load routes
-            app.use('/api', routes); // Mount routes
-        } catch (routeError) {
-            console.error('Error loading or applying routes. This might be due to a missing callback function in a route definition:', routeError.message);
-            // Re-throw the error to ensure the server does not start with broken routes
-            throw routeError;
-        }
-
-        app.use('*', (req, res) => {
-            res.status(404).json({
-                success: false,
-                message: 'Route not found'
-            });
-        });
-        app.use(errorHandler);
-
-        server = app.listen(config.PORT, () => {
-            console.log(`Server listening on port ${config.PORT}`);
-        });
-    } catch (err) {
-        console.error('Failed to start server: ', err.message);
-        process.exit(1);
+      const routes = require('./routes/index.routes'); // Dynamically load routes
+      app.use('/api', routes); // Mount routes
+    } catch (routeError) {
+      console.error(
+        'Error loading or applying routes. This might be due to a missing callback function in a route definition:',
+        routeError.message
+      );
+      // Re-throw the error to ensure the server does not start with broken routes
+      throw routeError;
     }
+
+    app.use('*', (req, res) => {
+      res.status(404).json({
+        success: false,
+        message: 'Route not found',
+      });
+    });
+    app.use(errorHandler);
+
+    server = app.listen(config.PORT, () => {
+      console.log(`Server listening on port ${config.PORT}`);
+    });
+  } catch (err) {
+    console.error('Failed to start server: ', err.message);
+    process.exit(1);
+  }
 }
 
 startServer();
 
 process.on('SIGINT', () => {
-    console.log('Received SIGINT. Graceful shutdown...');
-    server.close(() => {
-        console.log('Process terminated');
-        process.exit(0);
-    });
+  console.log('Received SIGINT. Graceful shutdown...');
+  server.close(() => {
+    console.log('Process terminated');
+    process.exit(0);
+  });
 });
 
 process.on('SIGTERM', () => {
-    console.log('Received SIGTERM. Graceful shutdown...');
-    server.close(() => {
-        console.log('Process terminated');
-        process.exit(0);
-    });
+  console.log('Received SIGTERM. Graceful shutdown...');
+  server.close(() => {
+    console.log('Process terminated');
+    process.exit(0);
+  });
 });
 module.exports = app;
