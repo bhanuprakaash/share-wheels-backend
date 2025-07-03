@@ -1,4 +1,8 @@
-require('dotenv').config();
+if (process.env.NODE_ENV === 'production') {
+  require('dotenv').config({ path: '.env.prod' });
+} else {
+  require('dotenv').config({ path: '.env.dev' });
+}
 
 module.exports = {
   NODE_ENV: process.env.NODE_ENV || 'development',
