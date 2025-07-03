@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - dev
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   build-and-push-dev-image:
@@ -27,6 +30,11 @@ jobs:
           registry: ghcr.io
           username: ${{github.actor}}
           password: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Display generated Image and tag
+        run: |
+          echo "Attempting to build and push with tag: ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
+          echo "github.sha value: ${{ github.sha }}"
 
       - name: Build and Push Docker Image - Dev Build
         uses: docker/build-push-action@v5
