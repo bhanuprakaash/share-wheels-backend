@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgis/postgis:17-3.5-alpine
+    container_name: dev_postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - dev-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: share_wheels_server
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      PORT: ${PORT}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_URL: ${DB_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS}
+
+
+    ports:
+      - "3001:3001"
+
+    volumes:
+      - .:/app:delegated
+      - /app/node_modules
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - dev-network
+
+volumes:
+    postgres_dev_data:
+      driver: local
+
+networks:
+    dev-network:
+      driver: bridge

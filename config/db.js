@@ -41,32 +41,38 @@ class DatabaseConnection {
   }
 
   async connect() {
-    try {
-      this.db = this.pgp(this.config);
-      const connection = await this.db.connect();
-      console.log('Successfully connected to PSQL database');
-      connection.done();
-      return this.db;
-    } catch (error) {
-      if (this.retryCount < this.maxRetries) {
-        this.retryCount++;
-        console.log(
-          `Connection attempt ${this.retryCount}/${this.maxRetries} failed. Retrying in ${this.retryInterval / 1000}s...`
+    if (!this.db) {
+      try {
+        this.db = this.pgp(this.config);
+        const connection = await this.db.connect();
+        console.log('Successfully connected to PSQL database');
+        connection.done();
+        return this.db;
+      } catch (error) {
+        if (this.retryCount < this.maxRetries) {
+          this.retryCount++;
+          console.log(
+            `Connection attempt ${this.retryCount}/${this.maxRetries} failed. Retrying in ${this.retryInterval / 1000}s...`
+          );
+          await new Promise((resolve) =>
+            setTimeout(resolve, this.retryInterval)
+          );
+          return this.connect();
+        }
+        console.error(
+          'Failed to connect to database after multiple attempts:',
+          error.message
         );
-        await new Promise((resolve) => setTimeout(resolve, this.retryInterval));
-        return this.connect();
+        throw error;
       }
-      console.error(
-        'Failed to connect to database after multiple attempts:',
-        error.message
-      );
-      throw error;
     }
+    return this.db;
   }
 
   async disconnect() {
     if (this.db) {
       await this.pgp.end();
+      this.db = null;
       console.log('Database connection closed');
     }
   }

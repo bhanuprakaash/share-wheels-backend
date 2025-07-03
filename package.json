@@ -5,7 +5,10 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js",
+    "start:dev": "cross-env NODE_ENV=development nodemon app.js",
+    "start:prod": "cross-env NODE_ENV=production node app.js",
+    "docker:dev": "docker compose --env-file .env.dev up --build",
+    "docker:prod": "docker compose --env-file .env.prod up --build -d",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky"
@@ -13,6 +16,7 @@
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
+    "cross-env": "^7.0.3",
     "debug": "~2.6.9",
     "dotenv": "^16.5.0",
     "express": "~4.16.1",

@@ -21,10 +21,8 @@ app.use(express.urlencoded({ extended: true }));
 async function startServer() {
   try {
     await db.connect();
-    const routes = require('./routes/index.routes');
-    // app.use('/api', routes);
     try {
-      const routes = require('./routes/index.routes'); // Dynamically load routes
+      const routes = require('./routes/index.routes');
       app.use('/api', routes); // Mount routes
     } catch (routeError) {
       console.error(
