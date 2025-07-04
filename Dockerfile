@@ -1,21 +1,30 @@
-FROM node:20-alpine
-
-ARG NODE_ENV=development
-
-RUN apk add --no-cache dumb-init
+FROM node:20-alpine AS builder
 
 WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci  && npm cache clean --force
+
+COPY . .
+
+FROM node:20-alpine AS production
+
+ARG NODE_ENV=production
+ENV NODE_ENV=$NODE_ENV
+
+RUN apk add --no-cache dumb-init
 
 RUN addgroup -g 1001 -S nodejs \
   && adduser -S -G nodejs express
 
+WORKDIR /app
+
 COPY --chown=express:nodejs package*.json ./
 
-RUN npm install && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
-ENV NODE_ENV=$NODE_ENV
-
-COPY --chown=express:nodejs . .
+COPY --from=builder --chown=express:nodejs /app .
 
 USER express
 

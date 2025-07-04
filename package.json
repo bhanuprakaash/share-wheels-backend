@@ -10,8 +10,7 @@
     "docker:dev": "docker compose --env-file .env.dev up --build",
     "docker:prod": "docker compose --env-file .env.prod up --build -d",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "prepare": "husky"
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
