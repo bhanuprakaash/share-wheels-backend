@@ -16,8 +16,6 @@ class User {
       bio,
     } = user;
 
-    const hashedPassword = await bcrypt.hash(password, config.BCRYPT_ROUNDS);
-
     try {
       return await db.tx(async (t) => {
         const userQuery = `
@@ -29,7 +27,7 @@ class User {
         const userValues = [
           email,
           phone_number,
-          hashedPassword,
+          password,
           first_name,
           last_name,
           profile_picture,

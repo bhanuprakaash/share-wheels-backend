@@ -1,12 +1,16 @@
 const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 const config = require('../config/env');
+const bcrypt = require('bcryptjs');
 
 class UserService {
   static async createUser(userData) {
     try {
-      await this.validateUser(userData);
-      return await User.create(userData);
+      const [, hashedPassword] = await Promise.all([
+        this.validateUser(userData),
+        bcrypt.hash(userData.password, config.BCRYPT_ROUNDS),
+      ]);
+      return await User.create({ ...userData, password: hashedPassword });
     } catch (err) {
       throw new Error(`User Creation Failed: ${err.message}`);
     }

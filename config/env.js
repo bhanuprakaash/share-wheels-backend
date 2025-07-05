@@ -9,7 +9,7 @@ module.exports = {
   PORT: process.env.PORT,
   DB_URL: process.env.DB_URL,
   JWT_SECRET: process.env.JWT_SECRET,
-  BCRYPT_ROUNDS: parseInt(process.env.BCRYPT_ROUNDS) || 12,
+  BCRYPT_ROUNDS: parseInt(process.env.BCRYPT_ROUNDS) || 10,
   HERE_MAPS_API_KEY: process.env.HERE_MAPS_API_KEY,
   HERE_MAPS_APP_ID: process.env.HERE_MAPS_APP_ID,
 };

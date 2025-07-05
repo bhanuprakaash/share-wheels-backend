@@ -16,9 +16,7 @@ build/
 .vite/
 
 # dotenv environment files
-.env
-.env.dev
-.env.prod
+.env.*
 
 # OS files
 .DS_Store
