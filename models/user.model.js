@@ -151,41 +151,44 @@ class User {
     }
   }
 
-  static async updateWalletBalanceAndHold(
+  static async updateWalletAndHoldBalance(
     transaction,
     userId,
-    fareAmount,
-    updateHoldAmount = false
+    walletAmount,
+    shouldUpdateHold = false,
+    holdAmount = 0
   ) {
     try {
-      let query;
-      let params;
-
-      if (updateHoldAmount) {
-        const amountToHold = Math.abs(fareAmount);
-        query = `
-          UPDATE users
-          SET wallet = wallet + $1, hold_amount = hold_amount + $2
-          WHERE user_id=$3
+      const { query, params } = shouldUpdateHold
+        ? {
+            query: `
+            UPDATE users
+            SET wallet = wallet + $1,
+                hold_amount = hold_amount + $2
+            WHERE user_id = $3
             RETURNING wallet, hold_amount
-        `;
-        params = [fareAmount, amountToHold, userId];
-      } else {
-        query = `
-        UPDATE users
-        SET wallet = wallet + $1
-        WHERE user_id = $2
-        RETURNING wallet
-        `;
-        params = [fareAmount, userId];
-      }
+          `,
+            params: [walletAmount, holdAmount, userId],
+          }
+        : {
+            query: `
+            UPDATE users
+            SET wallet = wallet + $1
+            WHERE user_id = $2
+            RETURNING wallet
+          `,
+            params: [walletAmount, userId],
+          };
 
       const result = await transaction.oneOrNone(query, params);
-      if (!result)
+
+      if (!result) {
         throw new Error(`User with ID ${userId} not found for wallet update`);
+      }
+
       return result;
-    } catch (err) {
-      throw err;
+    } catch (error) {
+      throw error;
     }
   }
 

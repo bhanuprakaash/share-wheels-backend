@@ -1,13 +1,13 @@
-@token=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkMjAxMjYzYS1lYjIyLTRmNTEtOTdhMC0yNmY0ZWYzOTU1ZjgiLCJlbWFpbCI6ImJoYW51cHJha2FzaEBnbWFpbC5jb20iLCJpYXQiOjE3NTE4MDI4ODYsImV4cCI6MTc1MTg4OTI4Nn0.lTSbc3OEvalQmXJihTgKpCEXVjDCUryx3loQ9y-kw98
-@userId=d201263a-eb22-4f51-97a0-26f4ef3955f8
-@bookingId=815aacaa-881f-4671-a379-e440df4dc3c5
+@token=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkMjAxMjYzYS1lYjIyLTRmNTEtOTdhMC0yNmY0ZWYzOTU1ZjgiLCJlbWFpbCI6ImJoYW51cHJha2FzaEBnbWFpbC5jb20iLCJpYXQiOjE3NTE5MDcwNDUsImV4cCI6MTc1MTk5MzQ0NX0.TWRrRJtOxNlEPYbfaw3vFPgIiJYbPgwJJ2sEe41xWDA
+@userId=53bdee39-9402-49be-8be8-8f908ec85050
+@bookingId=e75d32e4-24f5-4262-87d0-493dabc55d3d
 ### POST: Add booking by rider
 POST http://localhost:3001/api/booking
 Authorization: {{token}}
 Content-Type: application/json
 
 {
-  "trip_id": "38042afe-7dbd-4a24-9d27-a60f719cf90a",
+  "trip_id": "9c1daed9-f829-47ad-b021-fbc6707ad93f",
   "rider_id": "53bdee39-9402-49be-8be8-8f908ec85050",
   "start_geopoint": "0101000020E6100000B58BC9B34FBA5E4055E75D4A0D97F440",
   "end_geopoint": "0101000020E6100000B2C7852EB0CE5140663CE8C94EAE0C40",
@@ -21,7 +21,19 @@ Authorization: {{token}}
 Content-Type: application/json
 
 {
-  "trip_id": "38042afe-7dbd-4a24-9d27-a60f719cf90a",
-  "driver_id": "53bdee39-9402-49be-8be8-8f908ec85050",
-  "booking_status": "REJECTED"
+  "trip_id": "9c1daed9-f829-47ad-b021-fbc6707ad93f",
+  "driver_id": "03050902-366e-4d32-a356-6fa9925e8389",
+  "booking_status": "ACCEPTED"
+}
+
+### UPDATE: Rider Cancellation
+PATCH http://localhost:3001/api/booking/rider-cancellation/{{bookingId}}
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "trip_id": "9c1daed9-f829-47ad-b021-fbc6707ad93f",
+  "rider_id": "53bdee39-9402-49be-8be8-8f908ec85050",
+  "user_request_status": "CANCELLED",
+  "driver_id": "03050902-366e-4d32-a356-6fa9925e8389"
 }

@@ -30,6 +30,23 @@ const BookingController = {
       next(err);
     }
   },
+
+  async riderCancellation(req, res, next) {
+    try {
+      const { booking_id } = req.params;
+      const riderResponse = await BookingService.bookingCancellationByRider({
+        ...req.body,
+        booking_id: booking_id,
+      });
+      res.status(200).json({
+        success: true,
+        message: `Your Booking Cancelled Successfully!`,
+        data: riderResponse,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
 };
 
 module.exports = BookingController;

@@ -57,13 +57,19 @@ class Booking {
           actualFareAmount,
         ]);
 
+        if (booking.bookings_status === 'REJECTED') {
+          return booking;
+        }
+
         //update user wallet and trip seats
-        const { wallet } = await User.updateWalletBalanceAndHold(
+        const { wallet } = await User.updateWalletAndHoldBalance(
           transaction,
           rider_id,
           -actualFareAmount,
-          true
+          true,
+          actualFareAmount
         );
+
         const updateSeatsResult = await Trip.updateSeatsInTrip(
           transaction,
           trip_id,
@@ -114,6 +120,83 @@ class Booking {
         if (!result) throw new Error('Something Went Wrong');
         return result;
       });
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  static async updateBookingStatusByRider(bookingData) {
+    const { trip_id, booking_id, rider_id, user_request_status, driver_id } =
+      bookingData;
+    const query = `
+      UPDATE bookings
+      SET bookings_status='CANCELLED',
+          updated_at=NOW()
+      WHERE booking_id = $1
+        AND rider_id = $2
+        AND trip_id = $3
+        AND bookings_status NOT IN ('CANCELLED', 'REJECTED')
+        AND EXISTS(SELECT 1 FROM trips WHERE trips.trip_id = $4)
+      RETURNING bookings_status
+    `;
+    try {
+      return await db.tx(async (transaction) => {
+        if (user_request_status !== 'CANCELLED')
+          throw new Error("You Can't do this operation");
+        const { bookings_status, fare_amount, booked_seats } =
+          await this.getBookingById(transaction, booking_id);
+        const bookingStatusResponse = await transaction.oneOrNone(query, [
+          booking_id,
+          rider_id,
+          trip_id,
+          trip_id,
+        ]);
+        if (!bookingStatusResponse)
+          throw new Error("Can't able to update the status");
+        let walletDeduction;
+        if (bookings_status === 'ACCEPTED') {
+          walletDeduction = Number(fare_amount) / 2;
+        } else {
+          walletDeduction = Number(fare_amount);
+        }
+        const { wallet } = await User.updateWalletAndHoldBalance(
+          transaction,
+          rider_id,
+          walletDeduction,
+          true,
+          -walletDeduction
+        );
+        await User.updateWalletAndHoldBalance(
+          transaction,
+          driver_id,
+          walletDeduction,
+          false
+        );
+        const updateSeatsResult = await Trip.updateSeatsInTrip(
+          transaction,
+          trip_id,
+          -booked_seats
+        );
+        return {
+          wallet: wallet,
+          updated_seats: updateSeatsResult.available_seats,
+        };
+      });
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  static async getBookingById(dbInstance, booking_id) {
+    try {
+      const query = `
+        SELECT booking_id, trip_id, rider_id, bookings_status, fare_amount, booked_seats
+        FROM bookings
+        WHERE booking_id = $1;
+      `;
+      const bookingResponse = await dbInstance.oneOrNone(query, [booking_id]);
+      if (!bookingResponse) throw new Error('Booking is not Found');
+      return bookingResponse;
     } catch (err) {
       throw err;
     }

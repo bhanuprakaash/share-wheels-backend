@@ -18,6 +18,14 @@ class BookingService {
       throw err;
     }
   }
+
+  static async bookingCancellationByRider(bookingData) {
+    try {
+      return await Booking.updateBookingStatusByRider(bookingData);
+    } catch (err) {
+      throw err;
+    }
+  }
 }
 
 module.exports = BookingService;
