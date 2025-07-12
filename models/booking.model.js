@@ -86,6 +86,7 @@ class Booking {
           ...booking,
           wallet: wallet,
           remaining_seats: updateSeatsResult.available_seats,
+          driver_id: updateSeatsResult.driver_id,
         };
       });
     } catch (err) {
@@ -118,7 +119,7 @@ class Booking {
           driver_id,
         ]);
         if (!result) throw new Error('Something Went Wrong');
-        return result;
+        return { ...result, driver_id: driver_id };
       });
     } catch (err) {
       throw err;
@@ -143,22 +144,35 @@ class Booking {
       return await db.tx(async (transaction) => {
         if (user_request_status !== 'CANCELLED')
           throw new Error("You Can't do this operation");
+
         const { bookings_status, fare_amount, booked_seats } =
           await this.getBookingById(transaction, booking_id);
+
         const bookingStatusResponse = await transaction.oneOrNone(query, [
           booking_id,
           rider_id,
           trip_id,
           trip_id,
         ]);
+
         if (!bookingStatusResponse)
           throw new Error("Can't able to update the status");
+
         let walletDeduction;
+        let sendNotificationToDriver = false;
         if (bookings_status === 'ACCEPTED') {
           walletDeduction = Number(fare_amount) / 2;
+          await User.updateWalletAndHoldBalance(
+            transaction,
+            driver_id,
+            walletDeduction,
+            false
+          );
+          sendNotificationToDriver = true;
         } else {
-          walletDeduction = Number(fare_amount);
+          walletDeduction = 0;
         }
+
         const { wallet } = await User.updateWalletAndHoldBalance(
           transaction,
           rider_id,
@@ -166,20 +180,20 @@ class Booking {
           true,
           -walletDeduction
         );
-        await User.updateWalletAndHoldBalance(
-          transaction,
-          driver_id,
-          walletDeduction,
-          false
-        );
+
         const updateSeatsResult = await Trip.updateSeatsInTrip(
           transaction,
           trip_id,
           -booked_seats
         );
+
         return {
           wallet: wallet,
           updated_seats: updateSeatsResult.available_seats,
+          sendNotificationToDriver: sendNotificationToDriver,
+          driver_id: driver_id,
+          rider_id: rider_id,
+          booking_id: booking_id,
         };
       });
     } catch (err) {

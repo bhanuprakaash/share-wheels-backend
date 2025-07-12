@@ -63,7 +63,8 @@ class User {
              profile_picture,
              date_of_birth,
              gender,
-             bio
+             bio,
+             fcm_tokens
       FROM users
       WHERE user_id = $1`;
     try {
@@ -163,7 +164,7 @@ class User {
         ? {
             query: `
             UPDATE users
-            SET wallet = wallet + $1,
+            SET wallet      = wallet + $1,
                 hold_amount = hold_amount + $2
             WHERE user_id = $3
             RETURNING wallet, hold_amount
@@ -274,6 +275,40 @@ class User {
       WHERE user_id = $1`;
     try {
       return await db.oneOrNone(query, [userId]);
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  static async addFcmToken(userId, newToken) {
+    try {
+      const query = `
+        UPDATE users
+        SET fcm_tokens = array_append(fcm_tokens, $1)
+        WHERE user_id = $2
+          AND NOT ($1 = ANY (fcm_tokens))
+      `;
+      await db.oneOrNone(query, [newToken, userId]);
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  static async removeFcmTokens(userId, tokensToRemove) {
+    if (!Array.isArray(tokensToRemove) || tokensToRemove.length === 0) {
+      return;
+    }
+    try {
+      for (const token of tokensToRemove) {
+        await db.oneOrNone(
+          `
+            UPDATE users
+            SET fcm_tokens=array_remove(fcm_tokens, $1)
+            WHERE user_id = $2
+          `,
+          [token, userId]
+        );
+      }
     } catch (err) {
       throw err;
     }

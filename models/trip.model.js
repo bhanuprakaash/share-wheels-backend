@@ -274,7 +274,7 @@ class Trip {
       UPDATE trips
       SET available_seats = available_seats - $1
       WHERE trip_id = $2 AND available_seats >= $3
-      RETURNING available_seats
+      RETURNING available_seats,driver_id
       `;
       return await transaction.oneOrNone(query, [
         bookedSeats,

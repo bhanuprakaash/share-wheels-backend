@@ -127,6 +127,22 @@ class UserService {
       throw err;
     }
   }
+
+  static async removeFcmTokens(userId, tokensToRemove) {
+    try {
+      await User.removeFcmTokens(userId, tokensToRemove);
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  static async addNewFcmToken(userId, newToken) {
+    try {
+      await User.addFcmToken(userId, newToken);
+    } catch (err) {
+      throw err;
+    }
+  }
 }
 
 module.exports = UserService;
