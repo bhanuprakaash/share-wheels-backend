@@ -21,6 +21,14 @@ CREATE TYPE public.trip_status_enum AS ENUM (
     'CANCELLED'
     );
 
+CREATE TYPE public.booking_status_enum AS ENUM (
+    'PENDING',
+    'ACCEPTED',
+    'REJECTED',
+    'CANCELLED',
+    'COMPLETED'
+);
+
 --tables
 
 CREATE TABLE public.users
@@ -38,7 +46,10 @@ CREATE TABLE public.users
     created_at      timestamp with time zone DEFAULT now()                         NOT NULL,
     updated_at      timestamp with time zone DEFAULT now()                         NOT NULL,
     last_login_at   timestamp with time zone,
-    last_name       text
+    last_name       text,
+    wallet numeric(10,2) DEFAULT 100.00 CONSTRAINT chk_wallet_non_negative CHECK(wallet >= (0)::numeric),
+    hold_amount numeric(10,2) DEFAULT 0 CONSTRAINT chk_hold_amount_non_negative CHECK (hold_amount >= (0)::numeric),
+    fcm_tokens text[] DEFAULT ARRAY []::text[]
 );
 
 CREATE TABLE public.user_preferences
@@ -99,7 +110,7 @@ CREATE TABLE public.trips
 CREATE TABLE public.trip_waypoints
 (
     waypoint_id            uuid                     DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
-    trip_id                uuid                                               NOT NULL REFERENCES public.trips (trip_id) ON DELETE CASCADE,
+    trip_id                uuid                                              NOT NULL REFERENCES public.trips (trip_id) ON DELETE CASCADE,
     location_name          text                                               NOT NULL,
     address_line1          text                                               NOT NULL,
     geopoint               public.geography(Point, 4326)                      NOT NULL,
@@ -110,6 +121,19 @@ CREATE TABLE public.trip_waypoints
     updated_at             timestamp with time zone DEFAULT now()             NOT NULL,
     CONSTRAINT trip_waypoints_sequence_order_check CHECK ((sequence_order > 0)),
     CONSTRAINT trip_waypoints_trip_id_sequence_order_key UNIQUE (trip_id, sequence_order)
+);
+
+CREATE TABLE public.bookings(
+    booking_id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    trip_id uuid NOT NULL REFERENCES public.trips (trip_id) ON DELETE CASCADE,
+    rider_id uuid NOT NULL REFERENCES public.users (user_id),
+    start_geopoint geography(Point, 4326) NOT NULL,
+    end_geopoint geography(Point, 4326) NOT NULL,
+    booked_seats integer NOT NULL,
+    bookings_status booking_status_enum DEFAULT 'PENDING'::booking_status_enum NOT NULL,
+    fare_amount numeric(10,2) NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 --indexes

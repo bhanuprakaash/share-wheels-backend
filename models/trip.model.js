@@ -257,6 +257,35 @@ class Trip {
     }
   }
 
+  static async getAvailableSeatsByTripId(transaction, tripId) {
+    try {
+      const query = `
+      SELECT available_seats FROM trips WHERE trip_id=$1
+      `;
+      return await transaction.oneOrNone(query, [tripId]);
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  static async updateSeatsInTrip(transaction, tripId, bookedSeats) {
+    try {
+      const query = `
+      UPDATE trips
+      SET available_seats = available_seats - $1
+      WHERE trip_id = $2 AND available_seats >= $3
+      RETURNING available_seats,driver_id
+      `;
+      return await transaction.oneOrNone(query, [
+        bookedSeats,
+        tripId,
+        bookedSeats,
+      ]);
+    } catch (err) {
+      throw err;
+    }
+  }
+
   static async findAll(filters = {}) {
     try {
       const {

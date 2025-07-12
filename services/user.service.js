@@ -1,12 +1,16 @@
 const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 const config = require('../config/env');
+const bcrypt = require('bcryptjs');
 
 class UserService {
   static async createUser(userData) {
     try {
-      await this.validateUser(userData);
-      return await User.create(userData);
+      const [, hashedPassword] = await Promise.all([
+        this.validateUser(userData),
+        bcrypt.hash(userData.password, config.BCRYPT_ROUNDS),
+      ]);
+      return await User.create({ ...userData, password: hashedPassword });
     } catch (err) {
       throw new Error(`User Creation Failed: ${err.message}`);
     }
@@ -75,6 +79,15 @@ class UserService {
     }
   }
 
+  static async updateUserBalance(transaction, userId, columnName, amount){
+    try{
+      const updatedData = await User.updateBalance(transaction, userId, columnName, amount);
+      return updatedData;
+    } catch(err){
+      throw err;
+    }
+  }
+
   static async deleteUser(userId) {
     try {
       const result = await User.delete(userId);
@@ -119,6 +132,30 @@ class UserService {
       const preferences = await User.findPreferencesByID(userId);
       if (!preferences) throw new Error('User Not Found');
       return preferences;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  static async getUserWalletBalance(transaction, userId){
+    try{
+      return await User.getWalletBalanceByUserId(transaction, userId);
+    } catch(err){
+      throw err;
+    }
+  }
+
+  static async removeFcmTokens(userId, tokensToRemove) {
+    try {
+      await User.removeFcmTokens(userId, tokensToRemove);
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  static async addNewFcmToken(userId, newToken) {
+    try {
+      await User.addFcmToken(userId, newToken);
     } catch (err) {
       throw err;
     }

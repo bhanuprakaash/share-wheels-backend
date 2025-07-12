@@ -1,0 +1,40 @@
+@token=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkMjAxMjYzYS1lYjIyLTRmNTEtOTdhMC0yNmY0ZWYzOTU1ZjgiLCJlbWFpbCI6ImJoYW51cHJha2FzaEBnbWFpbC5jb20iLCJpYXQiOjE3NTIxNjQwNzIsImV4cCI6MTc1MjI1MDQ3Mn0.v-zumaA4PmRyjSZV3c3djP5uMC5NE0D6ctjiIY4vbzo
+@userId=53bdee39-9402-49be-8be8-8f908ec85050
+@bookingId=98ded727-bab1-4b6f-bfa0-9564c0171518
+### POST: Add booking by rider
+
+POST http://localhost:3001/api/booking
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "trip_id": "ce1dc7db-b79d-4d4b-a822-d750428909e7",
+  "rider_id": "bf4f6393-4a04-4452-bbd4-e388b92c7873",
+  "start_geopoint": "0101000020E6100000B58BC9B34FBA5E4055E75D4A0D97F440",
+  "end_geopoint": "0101000020E6100000B2C7852EB0CE5140663CE8C94EAE0C40",
+  "booked_seats": 1,
+  "fare_amount": 80
+}
+
+### UPDATE: driver approval
+PATCH http://localhost:3001/api/booking/driver-approval/{{bookingId}}
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "trip_id": "ce1dc7db-b79d-4d4b-a822-d750428909e7",
+  "driver_id": "74eb3166-1db9-4f58-a494-6b7ca0d05076",
+  "booking_status": "ACCEPTED"
+}
+
+### UPDATE: Rider Cancellation
+PATCH http://localhost:3001/api/booking/rider-cancellation/{{bookingId}}
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "trip_id": "ce1dc7db-b79d-4d4b-a822-d750428909e7",
+  "rider_id": "bf4f6393-4a04-4452-bbd4-e388b92c7873",
+  "user_request_status": "CANCELLED",
+  "driver_id": "74eb3166-1db9-4f58-a494-6b7ca0d05076"
+}

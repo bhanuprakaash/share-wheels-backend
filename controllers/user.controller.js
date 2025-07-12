@@ -1,4 +1,5 @@
 const UserService = require('../services/user.service');
+const NotificationService = require('../services/notification.service');
 
 const userController = {
   async createUser(req, res, next) {
@@ -102,6 +103,36 @@ const userController = {
       res.json({
         success: true,
         data: preferences,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+  async registerFcmToken(req, res, next) {
+    const { user_id } = req.params;
+    try {
+      await NotificationService.registerFcmToken({
+        ...req.body,
+        userId: user_id,
+      });
+      res.status(200).json({
+        success: true,
+        message: 'FCM token registered Successfully',
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+  async unRegisterFcmToken(req, res, next) {
+    const { user_id } = req.params;
+    try {
+      await NotificationService.unregisterFcmToken({
+        ...req.body,
+        userId: user_id,
+      });
+      res.status(200).json({
+        success: true,
+        message: 'FCM token unregistered successfully',
       });
     } catch (err) {
       next(err);

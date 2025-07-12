@@ -3,14 +3,14 @@ POST http://localhost:3001/api/user/signup
 Content-Type: application/json
 
 {
-  "email": "jane.doe@example.com",
-  "phone_number": "+1234567890",
+  "email": "bhanuprakash@gmail.com",
+  "phone_number": "+919347214120",
   "password": "SecurePass123!",
-  "first_name": "Jane",
-  "last_name": "Doe",
+  "first_name": "Bhanu",
+  "last_name": "P",
   "profile_picture": "https://example.com/images/jane.jpg",
   "date_of_birth": "1995-07-15",
-  "gender": "FEMALE",
+  "gender": "MALE",
   "bio": "Passionate traveler and photographer. Coffee enthusiast ☕."
 }
 
@@ -19,8 +19,8 @@ POST http://localhost:3001/api/user/login
 Content-Type: application/json
 
 {
-  "email": "jane.doe@example.com",
-  "password": "SecurePass321!"
+  "email": "bhanuprakash@gmail.com",
+  "password": "SecurePass123!"
 }
 
 ### GET - Get User Details
