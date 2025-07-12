@@ -6,10 +6,7 @@ const router = express.Router();
 
 router.use(authenticateToken);
 router.post('/', bookingController.bookTrip);
-router.patch('/driver-approval/:booking_id', bookingController.driverApproval);
-router.patch(
-  '/rider-cancellation/:booking_id',
-  bookingController.riderCancellation
-);
+router.patch('/driver/status/:booking_id', bookingController.updateBookingStatusByDriver);
+router.patch('/rider/status/:booking_id', bookingController.updateBookingStatusByRider);
 
 module.exports = router;

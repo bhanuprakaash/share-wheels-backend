@@ -139,7 +139,7 @@ class User {
     }
   }
 
-  static async getWalletBalanceByUserId(transaction, userId) {
+  static async getWalletBalanceByUserId(transaction = db, userId) {
     try {
       const query = `
         SELECT wallet, hold_amount
@@ -185,6 +185,29 @@ class User {
 
       if (!result) {
         throw new Error(`User with ID ${userId} not found for wallet update`);
+      }
+
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async updateBalance(transaction, userId, columnName, amount) {
+    try {
+      const column = pgp.as.name(columnName);
+      const query = `
+      UPDATE users
+      SET ${column} = ${column} + $1
+      WHERE user_id = $2
+      RETURNING wallet, hold_amount
+    `;
+      const params = [amount, userId];
+
+      const result = await transaction.oneOrNone(query, params);
+
+      if (!result) {
+        throw new Error(`User with ID ${userId} not found for balance update`);
       }
 
       return result;

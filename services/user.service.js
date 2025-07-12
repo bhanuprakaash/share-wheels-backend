@@ -79,6 +79,15 @@ class UserService {
     }
   }
 
+  static async updateUserBalance(transaction, userId, columnName, amount){
+    try{
+      const updatedData = await User.updateBalance(transaction, userId, columnName, amount);
+      return updatedData;
+    } catch(err){
+      throw err;
+    }
+  }
+
   static async deleteUser(userId) {
     try {
       const result = await User.delete(userId);
@@ -124,6 +133,14 @@ class UserService {
       if (!preferences) throw new Error('User Not Found');
       return preferences;
     } catch (err) {
+      throw err;
+    }
+  }
+
+  static async getUserWalletBalance(transaction, userId){
+    try{
+      return await User.getWalletBalanceByUserId(transaction, userId);
+    } catch(err){
       throw err;
     }
   }

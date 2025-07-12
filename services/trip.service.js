@@ -72,6 +72,22 @@ class TripService {
     }
   }
 
+  static async updateSeatsInTrip(dbInstance,tripId, bookedSeats){
+    try{
+      return await Trip.updateSeatsInTrip(dbInstance, tripId, bookedSeats);
+    }catch(err){
+      throw err;
+    }
+  }
+
+  static async getAvailableSeats(transaction, tripId){
+    try{
+      return await Trip.getAvailableSeatsByTripId(transaction, tripId);
+    }catch(err){
+      throw err;
+    }
+  }
+
   static async deleteTrip(tripId) {
     try {
       return await Trip.delete(tripId);
