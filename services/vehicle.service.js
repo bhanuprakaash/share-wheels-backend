@@ -1,9 +1,13 @@
-const Vehicle = require('../models/vehicle.model');
 
 class VehicleService {
-  static async getVehicleById(vehicleId) {
+
+  constructor(vehicleRepository){
+    this.vehicleRepository = vehicleRepository;
+  }
+
+  async getVehicleById(vehicleId) {
     try {
-      const vehicle = await Vehicle.findById(vehicleId);
+      const vehicle = await this.vehicleRepository.findById(vehicleId);
       if (!vehicle) {
         throw new Error('Vehicle not found');
       }
@@ -13,15 +17,15 @@ class VehicleService {
     }
   }
 
-  static async getVehiclesByDriverId(driverId) {
+  async getVehiclesByDriverId(driverId) {
     try {
-      return await Vehicle.findByDriverId(driverId);
+      return await this.vehicleRepository.findByDriverId(driverId);
     } catch (error) {
       throw new Error(`Failed to get vehicles for driver: ${error.message}`);
     }
   }
 
-  static async createVehicle(vehicleData) {
+  async createVehicle(vehicleData) {
     try {
       // Validate required fields
       const requiredFields = [
@@ -55,16 +59,16 @@ class VehicleService {
       //     throw new Error('License plate already exists');
       // }
 
-      return await Vehicle.create(vehicleData);
+      return await this.vehicleRepository.create(vehicleData);
     } catch (error) {
       throw error;
     }
   }
 
-  static async updateVehicle(vehicleId, vehicleData) {
+  async updateVehicle(vehicleId, vehicleData) {
     try {
       // Check if vehicle exists
-      const existingVehicle = await Vehicle.findById(vehicleId);
+      const existingVehicle = await this.vehicleRepository.findById(vehicleId);
       if (!existingVehicle) {
         throw new Error('Vehicle not found');
       }
@@ -90,15 +94,15 @@ class VehicleService {
         throw new Error('Seating capacity must be greater than 0');
       }
 
-      return await Vehicle.update(vehicleId, vehicleData);
+      return await this.vehicleRepository.update(vehicleId, vehicleData);
     } catch (error) {
       throw error;
     }
   }
 
-  static async deleteVehicle(vehicleId) {
+  async deleteVehicle(vehicleId) {
     try {
-      const deletedVehicle = await Vehicle.delete(vehicleId);
+      const deletedVehicle = await this.vehicleRepository.delete(vehicleId);
       if (!deletedVehicle) {
         throw new Error('Vehicle not found');
       }

@@ -1,31 +1,33 @@
-const { db } = require('../config/db');
 
 class Vehicle {
-  static async findById(vehicleId) {
+  constructor(dbClient){
+    this.db = dbClient;
+  }
+  async findById(vehicleId) {
     try {
       const query = `SELECT *
                            FROM vehicles
                            WHERE vehicle_id = $1`;
-      return await db.oneOrNone(query, [vehicleId]);
+      return await this.db.oneOrNone(query, [vehicleId]);
     } catch (err) {
       throw err;
     }
   }
 
-  static async findByDriverId(driverId) {
+  async findByDriverId(driverId) {
     try {
       const query = `SELECT *
                            FROM vehicles
                            where driver_id = $1`;
-      return await db.any(query, [driverId]);
+      return await this.db.any(query, [driverId]);
     } catch (err) {
       throw err;
     }
   }
 
-  static async create(vehicleData) {
+  async create(vehicleData) {
     try {
-      return await db.one(
+      return await this.db.one(
         `
                 INSERT INTO vehicles (driver_id, make, model, year, license_plate, color, seating_capacity,
                                       vehicle_ai_image)
@@ -48,7 +50,7 @@ class Vehicle {
     }
   }
 
-  static async update(vehicleId, vehicleData) {
+  async update(vehicleId, vehicleData) {
     try {
       const fields = [];
       const values = [];
@@ -73,7 +75,7 @@ class Vehicle {
       fields.push(`updated_at = NOW()`);
       values.push(vehicleId);
 
-      return await db.oneOrNone(
+      return await this.db.oneOrNone(
         `
                 UPDATE vehicles
                 SET ${fields.join(', ')}
@@ -87,9 +89,9 @@ class Vehicle {
     }
   }
 
-  static async delete(vehicleId) {
+  async delete(vehicleId) {
     try {
-      return await db.oneOrNone(
+      return await this.db.oneOrNone(
         'DELETE FROM vehicles WHERE vehicle_id = $1 RETURNING *',
         [vehicleId]
       );

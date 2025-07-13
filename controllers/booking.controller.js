@@ -1,9 +1,13 @@
-const BookingService = require('../services/booking.service');
 
-const BookingController = {
-  async bookTrip(req, res, next) {
+class BookingController {
+
+  constructor(bookingService){
+    this.bookingService = bookingService;
+  }
+
+  bookTrip = async(req, res, next) => {
     try {
-      const result = await BookingService.bookTrip(req.body);
+      const result = await this.bookingService.bookTrip(req.body);
       res.status(201).json({
         success: true,
         message: 'Booking Created Successfully',
@@ -12,12 +16,12 @@ const BookingController = {
     } catch (err) {
       next(err);
     }
-  },
+  }
 
-  async updateBookingStatusByDriver(req, res, next){
+  updateBookingStatusByDriver = async(req, res, next) => {
     try{
       const {booking_id} = req.params;
-      const driverResponse = await BookingService.updateBookingStatusByDriver({
+      const driverResponse = await this.bookingService.updateBookingStatusByDriver({
         ...req.body,
         booking_id: booking_id
       });
@@ -29,12 +33,12 @@ const BookingController = {
     } catch(err){
       next(err);
     }
-  },
+  }
 
-  async updateBookingStatusByRider(req, res, next){
+  updateBookingStatusByRider = async(req, res, next)=>{
     try{
       const {booking_id} = req.params;
-      const riderResponse = await BookingService.updateBookingStatusByRider({...req.body,booking_id:booking_id});
+      const riderResponse = await this.bookingService.updateBookingStatusByRider({...req.body,booking_id:booking_id});
       res.status(200).json({
         success: true,
         message: 'Booking is updated Successfully',

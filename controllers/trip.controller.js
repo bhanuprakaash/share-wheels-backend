@@ -1,11 +1,14 @@
-const TripService = require('../services/trip.service');
+class TripController {
 
-const TripController = {
-  async createTrip(req, res, next) {
+  constructor(tripService){
+    this.tripService = tripService;
+  }
+
+  createTrip = async(req, res, next) => {
     try {
       const { waypoints, ...tripData } = req.body;
 
-      const result = await TripService.createTrip(tripData, waypoints);
+      const result = await this.tripService.createTrip(tripData, waypoints);
 
       res.status(201).json({
         success: true,
@@ -15,12 +18,12 @@ const TripController = {
     } catch (err) {
       next(err);
     }
-  },
+  }
 
-  async getTripById(req, res, next) {
+  getTripById = async(req, res, next) =>{
     try {
       const { tripId } = req.params;
-      const result = await TripService.getTripById(tripId);
+      const result = await this.tripService.getTripById(tripId);
       return res.status(200).json({
         success: true,
         data: result,
@@ -28,14 +31,14 @@ const TripController = {
     } catch (err) {
       next(err);
     }
-  },
+  }
 
-  async updateTrip(req, res, next) {
+  updateTrip= async(req, res, next)=> {
     try {
       const { tripId } = req.params;
       const { waypoints, ...tripData } = req.body;
 
-      const result = await TripService.updateTrip(tripId, tripData, waypoints);
+      const result = await this.tripService.updateTrip(tripId, tripData, waypoints);
 
       res.status(200).json({
         success: true,
@@ -45,9 +48,9 @@ const TripController = {
     } catch (err) {
       next(err);
     }
-  },
+  }
 
-  async updateTripStatus(req, res, next) {
+  updateTripStatus= async(req, res, next)=> {
     try {
       const { tripId } = req.params;
       const { status } = req.body;
@@ -59,7 +62,7 @@ const TripController = {
         });
       }
 
-      const result = await TripService.updateTripStatus(tripId, status);
+      const result = await this.tripService.updateTripStatus(tripId, status);
 
       res.status(200).json({
         success: true,
@@ -69,13 +72,13 @@ const TripController = {
     } catch (err) {
       next(err);
     }
-  },
+  }
 
-  async deleteTrip(req, res, next) {
+  deleteTrip= async(req, res, next)=> {
     try {
       const { tripId } = req.params;
 
-      const result = await TripService.deleteTrip(tripId);
+      const result = await this.tripService.deleteTrip(tripId);
 
       res.status(200).json({
         success: true,
@@ -85,9 +88,9 @@ const TripController = {
     } catch (err) {
       next(err);
     }
-  },
+  }
 
-  async getAllTrips(req, res, next) {
+  getAllTrips= async(req, res, next) =>{
     try {
       const {
         driver_id,
@@ -126,7 +129,7 @@ const TripController = {
         };
       }
 
-      const trips = await TripService.getAllTrips(filters);
+      const trips = await this.tripService.getAllTrips(filters);
 
       res.status(200).json({
         success: true,
@@ -140,7 +143,7 @@ const TripController = {
     } catch (err) {
       next(err);
     }
-  },
+  }
 };
 
 module.exports = TripController;

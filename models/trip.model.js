@@ -1,11 +1,15 @@
-const { db, tripColumnSet, waypointsColumnSet } = require('../config/db');
-const Waypoint = require('../models/waypoint.model');
-const pgp = db.$config.pgp;
+const { tripColumnSet, waypointsColumnSet } = require('../config/db');
 
 class Trip {
-  static async create(tripData, waypoints = []) {
+  constructor(dbClient, pgp, waypointRespository) {
+    this.db = dbClient;
+    this.pgp = pgp;
+    this.waypointRespository = waypointRespository;
+  }
+
+  async create(tripData, waypoints = []) {
     try {
-      return await db.tx(async (t) => {
+      return await this.db.tx(async (t) => {
         const tripQuery = `
                     INSERT INTO trips (driver_id, vehicle_id, start_location_name, start_address_line1, start_geopoint,
                                        end_location_name, end_address_line1, end_geopoint, departure_time,
@@ -57,7 +61,7 @@ class Trip {
     }
   }
 
-  static async findById(tripId) {
+  async findById(tripId) {
     try {
       const tripQuery = `
                 SELECT t.trip_id,
@@ -101,10 +105,10 @@ class Trip {
                 WHERE trip_id = $1
                 ORDER BY sequence_order
             `;
-      const trip = await db.oneOrNone(tripQuery, [tripId]);
+      const trip = await this.db.oneOrNone(tripQuery, [tripId]);
       if (!trip) return null;
 
-      const waypoints = await db.any(waypointsQuery, [tripId]);
+      const waypoints = await this.db.any(waypointsQuery, [tripId]);
 
       return {
         ...trip,
@@ -115,9 +119,9 @@ class Trip {
     }
   }
 
-  static async update(tripId, tripData, waypoints = []) {
+  async update(tripId, tripData, waypoints = []) {
     try {
-      return await db.tx(async (t) => {
+      return await this.db.tx(async (t) => {
         const existingTrip = await t.oneOrNone(
           `SELECT trip_id, trip_status
                                                         FROM trips
@@ -150,17 +154,17 @@ class Trip {
         }
 
         if (hasUpdates) {
-          dataToUpdate.updated_at = pgp.as.date(new Date());
+          dataToUpdate.updated_at = this.pgp.as.date(new Date());
         } else {
           throw new Error('No fields to update in trip data');
         }
 
-        const condition = pgp.as.format('WHERE trip_id = ${tripId}', {
+        const condition = this.pgp.as.format('WHERE trip_id = ${tripId}', {
           tripId,
         });
 
         const updateQuery =
-          pgp.helpers.update(dataToUpdate, null, 'trips') +
+          this.pgp.helpers.update(dataToUpdate, null, 'trips') +
           condition +
           ` RETURNING *`;
 
@@ -193,7 +197,7 @@ class Trip {
     }
   }
 
-  static async updateByStatus(tripId, status) {
+  async updateByStatus(tripId, status) {
     try {
       const validStatuses = [
         'SCHEDULED',
@@ -230,15 +234,15 @@ class Trip {
       query += ' WHERE trip_id = $2 RETURNING trip_status';
       params.push(tripId);
 
-      return await db.one(query, params);
+      return await this.db.one(query, params);
     } catch (err) {
       throw err;
     }
   }
 
-  static async delete(tripId) {
+  async delete(tripId) {
     try {
-      const trip = await db.oneOrNone(
+      const trip = await this.db.oneOrNone(
         'SELECT trip_id, trip_status FROM trips WHERE trip_id = $1',
         [tripId]
       );
@@ -248,7 +252,7 @@ class Trip {
       if (trip.trip_status === 'IN_PROGRESS') {
         throw new Error('Cannot delete trip that is in progress');
       }
-      return await db.one(
+      return await this.db.one(
         'DELETE FROM trips WHERE trip_id = $1 RETURNING trip_id',
         [tripId]
       );
@@ -257,7 +261,7 @@ class Trip {
     }
   }
 
-  static async getAvailableSeatsByTripId(transaction, tripId) {
+  async getAvailableSeatsByTripId(transaction, tripId) {
     try {
       const query = `
       SELECT available_seats FROM trips WHERE trip_id=$1
@@ -268,7 +272,7 @@ class Trip {
     }
   }
 
-  static async updateSeatsInTrip(transaction, tripId, bookedSeats) {
+  async updateSeatsInTrip(transaction, tripId, bookedSeats) {
     try {
       const query = `
       UPDATE trips
@@ -286,7 +290,7 @@ class Trip {
     }
   }
 
-  static async findAll(filters = {}) {
+  async findAll(filters = {}) {
     try {
       const {
         driver_id,
@@ -408,7 +412,7 @@ class Trip {
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
       values.push(parseInt(limit), parseInt(offset));
 
-      const trips = await db.any(query, values);
+      const trips = await this.db.any(query, values);
 
       return await Promise.all(
         trips.map(async (trip) => {
@@ -419,7 +423,7 @@ class Trip {
               end_location,
               radius_km
             ),
-            Waypoint.findByTripId(trip.trip_id),
+            this.waypointRespository.findByTripId(trip.trip_id),
           ]);
           return {
             ...trip,
@@ -437,7 +441,7 @@ class Trip {
     }
   }
 
-  static _validateCoordinates(location, locationName = 'location') {
+  _validateCoordinates(location, locationName = 'location') {
     if (
       !location ||
       typeof location.lat === 'undefined' ||
@@ -454,7 +458,7 @@ class Trip {
     return { lat, lng };
   }
 
-  static async _generateAndSaveTripPolyline(t, tripId) {
+  async _generateAndSaveTripPolyline(t, tripId) {
     const polylineUpdateQuery = `
             UPDATE trips
             SET polyline_path = ST_MakeLine(
@@ -481,7 +485,7 @@ class Trip {
     }
   }
 
-  static async _insertTripWaypointsBatch(t, tripId, waypoints) {
+  async _insertTripWaypointsBatch(t, tripId, waypoints) {
     if (!waypoints || waypoints.length === 0) {
       return [];
     }
@@ -496,7 +500,7 @@ class Trip {
     }));
 
     const insertWaypointQuery =
-      pgp.helpers.insert(waypointsToBeInserted, waypointsColumnSet) +
+      this.pgp.helpers.insert(waypointsToBeInserted, waypointsColumnSet) +
       ` RETURNING *`;
 
     try {
@@ -506,7 +510,7 @@ class Trip {
     }
   }
 
-  static _parsePointString(pointString) {
+  _parsePointString(pointString) {
     // Regular expression to match POINT(lng lat) and capture the numbers
     const regex = /POINT\(\s*(-?\d+\.?\d*)\s+(-?\d+\.?\d*)\s*\)/;
     const match = pointString.match(regex);
@@ -523,12 +527,7 @@ class Trip {
     return null;
   }
 
-  static async _getRelevantWaypoints(
-    tripId,
-    startLocation,
-    endLocation,
-    radiusKm
-  ) {
+  async _getRelevantWaypoints(tripId, startLocation, endLocation, radiusKm) {
     const { lat: startLat, lng: startLng } = this._validateCoordinates(
       startLocation,
       'start_location'
@@ -626,7 +625,7 @@ class Trip {
       values = [tripId, startLng, startLat, radiusMeters, radiusDegrees];
     }
 
-    return await db.any(query, values);
+    return await this.db.any(query, values);
   }
 }
 

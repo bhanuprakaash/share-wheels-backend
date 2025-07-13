@@ -1,7 +1,8 @@
-const { db } = require('../config/db');
-
 class Booking {
-  static async addBooking(transaction = db, bookingData) {
+  constructor(dbClient){
+    this.db = dbClient;
+  }
+  async addBooking(transaction = this.db, bookingData) {
     try {
       const {
         trip_id,
@@ -32,7 +33,7 @@ class Booking {
     }
   }
 
-  static async updateBookingStatus(dbInstance = db, bookingData) {
+  async updateBookingStatus(dbInstance = this.db, bookingData) {
     const {
       trip_id,
       booking_id,
@@ -70,7 +71,7 @@ class Booking {
     }
   }
 
-  static async getBookingById(dbInstance = db, booking_id) {
+  async getBookingById(dbInstance = this.db, booking_id) {
     try {
       const query = `
         SELECT booking_id, trip_id, rider_id, bookings_status, fare_amount, booked_seats

@@ -1,9 +1,13 @@
-const VehicleService = require('../services/vehicle.service');
-const vehicleController = {
-  async getVehicleById(req, res, next) {
+class VehicleController  {
+
+  constructor(vehicleService){
+    this.vehicleService = vehicleService;
+  }
+
+  getVehicleById = async(req, res, next) => {
     try {
       const { vehicleId } = req.params;
-      const vehicle = await VehicleService.getVehicleById(vehicleId);
+      const vehicle = await this.vehicleService.getVehicleById(vehicleId);
 
       res.status(200).json({
         success: true,
@@ -12,11 +16,11 @@ const vehicleController = {
     } catch (error) {
       next(error);
     }
-  },
-  async getMyVehicles(req, res, next) {
+  }
+  getMyVehicles = async (req, res, next) =>{
     try {
       const driverId = req.user.userId;
-      const vehicles = await VehicleService.getVehiclesByDriverId(driverId);
+      const vehicles = await this.vehicleService.getVehiclesByDriverId(driverId);
 
       res.status(200).json({
         success: true,
@@ -25,15 +29,15 @@ const vehicleController = {
     } catch (error) {
       next(error);
     }
-  },
-  async createVehicle(req, res, next) {
+  }
+  createVehicle = async (req, res, next) => {
     try {
       const vehicleData = {
         ...req.body,
         driver_id: req.user.userId,
       };
 
-      const vehicle = await VehicleService.createVehicle(vehicleData);
+      const vehicle = await this.vehicleService.createVehicle(vehicleData);
 
       res.status(201).json({
         success: true,
@@ -43,13 +47,13 @@ const vehicleController = {
     } catch (error) {
       next(error);
     }
-  },
-  async updateVehicle(req, res, next) {
+  }
+  updateVehicle = async (req, res, next) => {
     try {
       const { vehicleId } = req.params;
 
       // First check if the vehicle belongs to the authenticated user
-      const existingVehicle = await VehicleService.getVehicleById(vehicleId);
+      const existingVehicle = await this.vehicleService.getVehicleById(vehicleId);
       if (existingVehicle.driver_id !== req.user.userId) {
         return res.status(403).json({
           success: false,
@@ -57,7 +61,7 @@ const vehicleController = {
         });
       }
 
-      const vehicle = await VehicleService.updateVehicle(vehicleId, req.body);
+      const vehicle = await this.vehicleService.updateVehicle(vehicleId, req.body);
 
       res.status(200).json({
         success: true,
@@ -67,13 +71,13 @@ const vehicleController = {
     } catch (error) {
       next(error);
     }
-  },
-  async deleteVehicle(req, res, next) {
+  }
+  deleteVehicle = async (req, res, next) => {
     try {
       const { vehicleId } = req.params;
 
       // First check if the vehicle belongs to the authenticated user
-      const existingVehicle = await VehicleService.getVehicleById(vehicleId);
+      const existingVehicle = await this.vehicleService.getVehicleById(vehicleId);
       if (existingVehicle.driver_id !== req.user.userId) {
         return res.status(403).json({
           success: false,
@@ -81,7 +85,7 @@ const vehicleController = {
         });
       }
 
-      await VehicleService.deleteVehicle(vehicleId);
+      await this.vehicleService.deleteVehicle(vehicleId);
 
       res.status(200).json({
         success: true,
@@ -90,7 +94,7 @@ const vehicleController = {
     } catch (error) {
       next(error);
     }
-  },
+  }
 };
 
-module.exports = vehicleController;
+module.exports = VehicleController;

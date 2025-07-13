@@ -1,7 +1,10 @@
-const Trip = require('../models/trip.model');
-
 class TripService {
-  static async createTrip(tripData, waypoints = []) {
+
+  constructor(tripRepository){
+    this.tripRepository = tripRepository;
+  }
+
+  async createTrip(tripData, waypoints = []) {
     try {
       if (tripData.start_geopoint) {
         tripData.start_geopoint = this._validateAndConvertInputCoordinates(
@@ -19,7 +22,7 @@ class TripService {
 
       const processWaypoints = this._processWaypoints(waypoints);
 
-      const result = await Trip.create(tripData, processWaypoints);
+      const result = await this.tripRepository.create(tripData, processWaypoints);
 
       return { trip: result.trip, waypoints: result.waypoints };
     } catch (err) {
@@ -27,9 +30,9 @@ class TripService {
     }
   }
 
-  static async getTripById(tripId) {
+  async getTripById(tripId) {
     try {
-      const tripWithWaypoints = await Trip.findById(tripId);
+      const tripWithWaypoints = await this.tripRepository.findById(tripId);
       if (!tripWithWaypoints) {
         throw new Error('Trip not found');
       }
@@ -40,7 +43,7 @@ class TripService {
     }
   }
 
-  static async updateTrip(tripId, tripData, waypoints = []) {
+  async updateTrip(tripId, tripData, waypoints = []) {
     try {
       if (tripData.start_geopoint) {
         tripData.start_geopoint = this._validateAndConvertInputCoordinates(
@@ -58,53 +61,53 @@ class TripService {
 
       const processedWaypoints = this._processWaypoints(waypoints);
 
-      return await Trip.update(tripId, tripData, processedWaypoints);
+      return await this.tripRepository.update(tripId, tripData, processedWaypoints);
     } catch (err) {
       throw err;
     }
   }
 
-  static async updateTripStatus(tripId, status) {
+  async updateTripStatus(tripId, status) {
     try {
-      return await Trip.updateByStatus(tripId, status);
+      return await this.tripRepository.updateByStatus(tripId, status);
     } catch (err) {
       throw err;
     }
   }
 
-  static async updateSeatsInTrip(dbInstance,tripId, bookedSeats){
+  async updateSeatsInTrip(dbInstance,tripId, bookedSeats){
     try{
-      return await Trip.updateSeatsInTrip(dbInstance, tripId, bookedSeats);
+      return await this.tripRepository.updateSeatsInTrip(dbInstance, tripId, bookedSeats);
     }catch(err){
       throw err;
     }
   }
 
-  static async getAvailableSeats(transaction, tripId){
+  async getAvailableSeats(transaction, tripId){
     try{
-      return await Trip.getAvailableSeatsByTripId(transaction, tripId);
+      return await this.tripRepository.getAvailableSeatsByTripId(transaction, tripId);
     }catch(err){
       throw err;
     }
   }
 
-  static async deleteTrip(tripId) {
+  async deleteTrip(tripId) {
     try {
-      return await Trip.delete(tripId);
+      return await this.tripRepository.delete(tripId);
     } catch (err) {
       throw err;
     }
   }
 
-  static async getAllTrips(filters = {}) {
+  async getAllTrips(filters = {}) {
     try {
-      return await Trip.findAll(filters);
+      return await this.tripRepository.findAll(filters);
     } catch (err) {
       throw err;
     }
   }
 
-  static _validateAndConvertInputCoordinates(geopoint, fieldName) {
+  _validateAndConvertInputCoordinates(geopoint, fieldName) {
     if (typeof geopoint === 'object' && geopoint != null) {
       if (
         typeof geopoint.lat === 'number' &&
@@ -117,7 +120,7 @@ class TripService {
     }
   }
 
-  static _processWaypoints(waypoints) {
+  _processWaypoints(waypoints) {
     if (!waypoints || waypoints.length === 0) {
       return [];
     }

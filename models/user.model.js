@@ -1,9 +1,13 @@
-const { db, pgp } = require('../config/db');
 const bcrypt = require('bcryptjs');
 const config = require('../config/env');
 
 class User {
-  static async create(user) {
+  constructor(dbClient, pgp){
+    this.db = dbClient;
+    this.pgp = pgp
+  }
+
+  async create(user) {
     const {
       email,
       phone_number,
@@ -17,7 +21,7 @@ class User {
     } = user;
 
     try {
-      return await db.tx(async (t) => {
+      return await this.db.tx(async (t) => {
         const userQuery = `
           INSERT INTO users (email, phone_number, password, first_name, last_name, profile_picture,
                              date_of_birth, gender, bio)
@@ -53,7 +57,7 @@ class User {
     }
   }
 
-  static async findByUserId(userId) {
+  async findByUserId(userId) {
     const query = `
       SELECT email,
              password,
@@ -68,13 +72,13 @@ class User {
       FROM users
       WHERE user_id = $1`;
     try {
-      return await db.oneOrNone(query, [userId]);
+      return await this.db.oneOrNone(query, [userId]);
     } catch (err) {
       throw err;
     }
   }
 
-  static async findByEmail(email) {
+  async findByEmail(email) {
     const query = `
       SELECT user_id,
              email,
@@ -93,13 +97,13 @@ class User {
       FROM users
       WHERE email = $1`;
     try {
-      return await db.oneOrNone(query, [email]);
+      return await this.db.oneOrNone(query, [email]);
     } catch (err) {
       throw err;
     }
   }
 
-  static async update(userId, updateData) {
+  async update(userId, updateData) {
     const cleanData = Object.keys(updateData).reduce((acc, key) => {
       if (updateData[key] !== undefined && key !== 'user_id') {
         acc[key] = updateData[key];
@@ -113,33 +117,33 @@ class User {
 
     cleanData.updated_at = new Date().toISOString();
 
-    const condition = pgp.as.format(' WHERE user_id = $1', [userId]);
+    const condition = this.pgp.as.format(' WHERE user_id = $1', [userId]);
     const updateQuery =
-      pgp.helpers.update(cleanData, null, 'users') +
+      this.pgp.helpers.update(cleanData, null, 'users') +
       condition +
       ' RETURNING user_id, email, phone_number, first_name, profile_picture, date_of_birth, gender, bio, is_active, created_at, updated_at';
 
     try {
-      return await db.oneOrNone(updateQuery);
+      return await this.db.oneOrNone(updateQuery);
     } catch (err) {
       throw err;
     }
   }
 
-  static async delete(userId) {
+  async delete(userId) {
     const query = `
       DELETE
       FROM users
       WHERE user_id = $1
       RETURNING user_id`;
     try {
-      return await db.oneOrNone(query, [userId]);
+      return await this.db.oneOrNone(query, [userId]);
     } catch (err) {
       throw err;
     }
   }
 
-  static async getWalletBalanceByUserId(transaction = db, userId) {
+  async getWalletBalanceByUserId(transaction = this.db, userId) {
     try {
       const query = `
         SELECT wallet, hold_amount
@@ -152,50 +156,9 @@ class User {
     }
   }
 
-  static async updateWalletAndHoldBalance(
-    transaction,
-    userId,
-    walletAmount,
-    shouldUpdateHold = false,
-    holdAmount = 0
-  ) {
+  async updateBalance(transaction, userId, columnName, amount) {
     try {
-      const { query, params } = shouldUpdateHold
-        ? {
-            query: `
-            UPDATE users
-            SET wallet      = wallet + $1,
-                hold_amount = hold_amount + $2
-            WHERE user_id = $3
-            RETURNING wallet, hold_amount
-          `,
-            params: [walletAmount, holdAmount, userId],
-          }
-        : {
-            query: `
-            UPDATE users
-            SET wallet = wallet + $1
-            WHERE user_id = $2
-            RETURNING wallet
-          `,
-            params: [walletAmount, userId],
-          };
-
-      const result = await transaction.oneOrNone(query, params);
-
-      if (!result) {
-        throw new Error(`User with ID ${userId} not found for wallet update`);
-      }
-
-      return result;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async updateBalance(transaction, userId, columnName, amount) {
-    try {
-      const column = pgp.as.name(columnName);
+      const column = this.pgp.as.name(columnName);
       const query = `
       UPDATE users
       SET ${column} = ${column} + $1
@@ -216,7 +179,7 @@ class User {
     }
   }
 
-  static async updateLastLogin(userId) {
+  async updateLastLogin(userId) {
     const query = `
       UPDATE users
       SET last_login_at = CURRENT_TIMESTAMP
@@ -224,20 +187,20 @@ class User {
     `;
 
     try {
-      await db.none(query, [userId]);
+      await this.db.none(query, [userId]);
     } catch (err) {
       throw err;
     }
   }
 
-  static async comparePassword(plainPassword, hashedPassword) {
+  async comparePassword(plainPassword, hashedPassword) {
     return await bcrypt.compare(plainPassword, hashedPassword);
   }
 
-  static async verifyPassword(userId, currentPassword) {
+  async verifyPassword(userId, currentPassword) {
     try {
       const query = 'SELECT password from users WHERE user_id=$1';
-      const user = await db.oneOrNone(query, [userId]);
+      const user = await this.db.oneOrNone(query, [userId]);
       if (!user) return false;
       return await this.comparePassword(currentPassword, user.password);
     } catch (err) {
@@ -245,7 +208,7 @@ class User {
     }
   }
 
-  static async updatePassword(userId, newPassword) {
+  async updatePassword(userId, newPassword) {
     try {
       const hashedPassword = await bcrypt.hash(
         newPassword,
@@ -256,13 +219,13 @@ class User {
                          updated_at = CURRENT_TIMESTAMP
                      WHERE user_id = $2
                      RETURNING user_id, email, updated_at`;
-      return await db.oneOrNone(query, [hashedPassword, userId]);
+      return await this.db.oneOrNone(query, [hashedPassword, userId]);
     } catch (err) {
       throw err;
     }
   }
 
-  static async updatePreferences(userId, updateData) {
+  async updatePreferences(userId, updateData) {
     const cleanData = Object.keys(updateData).reduce((acc, key) => {
       if (updateData[key] !== undefined) {
         acc[key] = updateData[key];
@@ -273,19 +236,19 @@ class User {
       throw new Error('No fields to update');
     }
     cleanData.updated_at = new Date().toISOString();
-    const condition = pgp.as.format(' WHERE user_id = $1', [userId]);
+    const condition = this.pgp.as.format(' WHERE user_id = $1', [userId]);
     const updateQuery =
-      pgp.helpers.update(cleanData, null, 'user_preferences') +
+      this.pgp.helpers.update(cleanData, null, 'user_preferences') +
       condition +
       ' RETURNING user_id, allow_smoking, music_genre, has_pets, is_pet_friendly, communication_preference, seat_preference, updated_at';
     try {
-      return await db.oneOrNone(updateQuery);
+      return await this.db.oneOrNone(updateQuery);
     } catch (err) {
       throw err;
     }
   }
 
-  static async findPreferencesByID(userId) {
+  async findPreferencesByID(userId) {
     const query = `
       SELECT allow_smoking,
              music_genre,
@@ -297,13 +260,13 @@ class User {
       FROM user_preferences
       WHERE user_id = $1`;
     try {
-      return await db.oneOrNone(query, [userId]);
+      return await this.db.oneOrNone(query, [userId]);
     } catch (err) {
       throw err;
     }
   }
 
-  static async addFcmToken(userId, newToken) {
+  async addFcmToken(userId, newToken) {
     try {
       const query = `
         UPDATE users
@@ -311,19 +274,19 @@ class User {
         WHERE user_id = $2
           AND NOT ($1 = ANY (fcm_tokens))
       `;
-      await db.oneOrNone(query, [newToken, userId]);
+      await this.db.oneOrNone(query, [newToken, userId]);
     } catch (err) {
       throw err;
     }
   }
 
-  static async removeFcmTokens(userId, tokensToRemove) {
+  async removeFcmTokens(userId, tokensToRemove) {
     if (!Array.isArray(tokensToRemove) || tokensToRemove.length === 0) {
       return;
     }
     try {
       for (const token of tokensToRemove) {
-        await db.oneOrNone(
+        await this.db.oneOrNone(
           `
             UPDATE users
             SET fcm_tokens=array_remove(fcm_tokens, $1)

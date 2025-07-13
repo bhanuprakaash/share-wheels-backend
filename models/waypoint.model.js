@@ -1,7 +1,10 @@
-const { db } = require('../config/db');
-
 class Waypoint {
-  static async addToTrip(dbOrTx, tripId, waypointData) {
+
+  constructor(dbClient){
+    this.db = dbClient;
+  }
+
+  async addToTrip(dbOrTx = this.db, tripId, waypointData) {
     try {
       const query = `
                 INSERT INTO trip_waypoints (trip_id, location_name, address_line1, geopoint,
@@ -23,7 +26,7 @@ class Waypoint {
     }
   }
 
-  static async findByTripId(tripId) {
+  async findByTripId(tripId) {
     try {
       const query = `
                 SELECT *
@@ -32,13 +35,13 @@ class Waypoint {
                 ORDER BY sequence_order
             `;
 
-      return await db.any(query, [tripId]);
+      return await this.db.any(query, [tripId]);
     } catch (error) {
       throw error;
     }
   }
 
-  static async update(dbOrTx, waypointId, updateData) {
+  async update(dbOrTx = this.db, waypointId, updateData) {
     try {
       const updateFields = [];
       const params = [];
@@ -85,11 +88,11 @@ class Waypoint {
     }
   }
 
-  static async delete(waypointId) {
+  async delete(waypointId) {
     try {
       const query =
         'DELETE FROM trip_waypoints WHERE waypoint_id = $1 RETURNING *';
-      return await db.oneOrNone(query, [waypointId]);
+      return await this.db.oneOrNone(query, [waypointId]);
     } catch (error) {
       console.error('Error deleting waypoint:', error);
       throw error;

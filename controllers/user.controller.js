@@ -1,10 +1,13 @@
-const UserService = require('../services/user.service');
-const NotificationService = require('../services/notification.service');
 
-const userController = {
-  async createUser(req, res, next) {
+class UserController  {
+
+  constructor(userService){
+    this.userService = userService;
+  }
+
+  createUser = async(req, res, next) =>{
     try {
-      const user = await UserService.createUser(req.body);
+      const user = await this.userService.createUser(req.body);
       res.status(201).json({
         message: 'User created successfully',
         success: true,
@@ -13,11 +16,11 @@ const userController = {
     } catch (err) {
       next(err);
     }
-  },
-  async loginUser(req, res, next) {
+  }
+  loginUser = async(req, res, next)=>{
     try {
       const { email, password } = req.body;
-      const result = await UserService.authenticateUser(email, password);
+      const result = await this.userService.authenticateUser(email, password);
       res.json({
         success: true,
         message: 'Login Successful',
@@ -26,11 +29,11 @@ const userController = {
     } catch (err) {
       next(err);
     }
-  },
-  async getUser(req, res, next) {
+  }
+  getUser = async(req, res, next) => {
     try {
       const { id } = req.params;
-      const user = await UserService.getUserById(id);
+      const user = await this.userService.getUserById(id);
       res.json({
         success: true,
         data: user,
@@ -38,11 +41,11 @@ const userController = {
     } catch (err) {
       next(err);
     }
-  },
-  async updateUser(req, res, next) {
+  }
+  updateUser = async(req, res, next) =>{
     try {
       const { id } = req.params;
-      const user = await UserService.updateUser(id, req.body);
+      const user = await this.userService.updateUser(id, req.body);
       res.json({
         success: true,
         message: 'User updated Successfully',
@@ -51,11 +54,11 @@ const userController = {
     } catch (err) {
       next(err);
     }
-  },
-  async deleteUser(req, res, next) {
+  }
+  deleteUser = async(req, res, next) =>{
     try {
       const { id } = req.params;
-      const result = await UserService.deleteUser(id);
+      const result = await this.userService.deleteUser(id);
       res.json({
         success: true,
         message: 'User Deleted Successfully',
@@ -64,12 +67,12 @@ const userController = {
     } catch (err) {
       next(err);
     }
-  },
-  async updateUserPassword(req, res, next) {
+  }
+  updateUserPassword = async(req, res, next)=> {
     try {
       const { id } = req.params;
       const { currentPassword, newPassword } = req.body;
-      const result = await UserService.updateUserPassword(
+      const result = await this.userService.updateUserPassword(
         id,
         currentPassword,
         newPassword
@@ -82,11 +85,11 @@ const userController = {
     } catch (err) {
       next(err);
     }
-  },
-  async updateUserPreferences(req, res, next) {
+  }
+  updateUserPreferences = async(req, res, next)=> {
     try {
       const { id } = req.params;
-      const preferences = await UserService.updateUserPreferences(id, req.body);
+      const preferences = await this.userService.updateUserPreferences(id, req.body);
       res.json({
         success: true,
         message: 'User Preferences Updated Successfully',
@@ -95,11 +98,11 @@ const userController = {
     } catch (err) {
       next(err);
     }
-  },
-  async getUserPreferences(req, res, next) {
+  }
+  getUserPreferences = async(req, res, next)=> {
     try {
       const { id } = req.params;
-      const preferences = await UserService.getUserPreferences(id);
+      const preferences = await this.userService.getUserPreferences(id);
       res.json({
         success: true,
         data: preferences,
@@ -107,37 +110,37 @@ const userController = {
     } catch (err) {
       next(err);
     }
-  },
-  async registerFcmToken(req, res, next) {
-    const { user_id } = req.params;
-    try {
-      await NotificationService.registerFcmToken({
-        ...req.body,
-        userId: user_id,
-      });
-      res.status(200).json({
-        success: true,
-        message: 'FCM token registered Successfully',
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
-  async unRegisterFcmToken(req, res, next) {
-    const { user_id } = req.params;
-    try {
-      await NotificationService.unregisterFcmToken({
-        ...req.body,
-        userId: user_id,
-      });
-      res.status(200).json({
-        success: true,
-        message: 'FCM token unregistered successfully',
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+  }
+  // registerFcmToken = async(req, res, next)=> {
+  //   const { user_id } = req.params;
+  //   try {
+  //     await NotificationService.registerFcmToken({
+  //       ...req.body,
+  //       userId: user_id,
+  //     });
+  //     res.status(200).json({
+  //       success: true,
+  //       message: 'FCM token registered Successfully',
+  //     });
+  //   } catch (err) {
+  //     next(err);
+  //   }
+  // }
+  // unRegisterFcmToken = async(req, res, next)=> {
+  //   const { user_id } = req.params;
+  //   try {
+  //     await NotificationService.unregisterFcmToken({
+  //       ...req.body,
+  //       userId: user_id,
+  //     });
+  //     res.status(200).json({
+  //       success: true,
+  //       message: 'FCM token unregistered successfully',
+  //     });
+  //   } catch (err) {
+  //     next(err);
+  //   }
+  // }
 };
 
-module.exports = userController;
+module.exports = UserController;

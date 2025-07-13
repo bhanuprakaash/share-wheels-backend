@@ -79,7 +79,7 @@ class DatabaseConnection {
 
   getConnection() {
     if (!this.db) {
-      throw new Error('Database connection not initialized');
+      return this.connect();
     }
     return this.db;
   }

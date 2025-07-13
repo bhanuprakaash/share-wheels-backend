@@ -1,42 +1,46 @@
-const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 const config = require('../config/env');
 const bcrypt = require('bcryptjs');
 
 class UserService {
-  static async createUser(userData) {
+
+  constructor(userRepository){
+    this.userRepository = userRepository;
+  }
+
+  async createUser(userData) {
     try {
       const [, hashedPassword] = await Promise.all([
         this.validateUser(userData),
         bcrypt.hash(userData.password, config.BCRYPT_ROUNDS),
       ]);
-      return await User.create({ ...userData, password: hashedPassword });
+      return await this.userRepository.create({ ...userData, password: hashedPassword });
     } catch (err) {
       throw new Error(`User Creation Failed: ${err.message}`);
     }
   }
 
-  static async validateUser(userData) {
-    const existingUser = await User.findByEmail(userData.email);
+  async validateUser(userData) {
+    const existingUser = await this.userRepository.findByEmail(userData.email);
     if (existingUser) {
       throw new Error('User already exists');
     }
   }
 
-  static async authenticateUser(email, password) {
+  async authenticateUser(email, password) {
     try {
-      const user = await User.findByEmail(email);
+      const user = await this.userRepository.findByEmail(email);
       if (!user) {
         throw new Error('Invalid Credential - Email');
       }
-      const isValidPassword = await User.comparePassword(
+      const isValidPassword = await this.userRepository.comparePassword(
         password,
         user.password
       );
       if (!isValidPassword) {
         throw new Error('Invalid Credential - Password');
       }
-      await User.updateLastLogin(user.user_id);
+      await this.userRepository.updateLastLogin(user.user_id);
       const token = jwt.sign(
         { userId: user.user_id, email: user.email },
         config.JWT_SECRET,
@@ -54,9 +58,9 @@ class UserService {
     }
   }
 
-  static async getUserById(userId) {
+  async getUserById(userId) {
     try {
-      const user = await User.findByUserId(userId);
+      const user = await this.userRepository.findByUserId(userId);
       if (!user) {
         throw new Error('User not found');
       }
@@ -67,9 +71,9 @@ class UserService {
     }
   }
 
-  static async updateUser(userId, updateData) {
+  async updateUser(userId, updateData) {
     try {
-      const user = await User.update(userId, updateData);
+      const user = await this.userRepository.update(userId, updateData);
       if (!user) {
         throw new Error('User not found');
       }
@@ -79,18 +83,18 @@ class UserService {
     }
   }
 
-  static async updateUserBalance(transaction, userId, columnName, amount){
+  async updateUserBalance(transaction, userId, columnName, amount){
     try{
-      const updatedData = await User.updateBalance(transaction, userId, columnName, amount);
+      const updatedData = await this.userRepository.updateBalance(transaction, userId, columnName, amount);
       return updatedData;
     } catch(err){
       throw err;
     }
   }
 
-  static async deleteUser(userId) {
+  async deleteUser(userId) {
     try {
-      const result = await User.delete(userId);
+      const result = await this.userRepository.delete(userId);
       if (!result) {
         throw new Error('User not found');
       }
@@ -100,24 +104,24 @@ class UserService {
     }
   }
 
-  static async updateUserPassword(userId, currentPassword, newPassword) {
+  async updateUserPassword(userId, currentPassword, newPassword) {
     try {
-      const isPasswordValid = await User.verifyPassword(
+      const isPasswordValid = await this.userRepository.verifyPassword(
         userId,
         currentPassword
       );
       if (!isPasswordValid) {
         throw new Error('Current Password is Wrong');
       }
-      return await User.updatePassword(userId, newPassword);
+      return await this.userRepository.updatePassword(userId, newPassword);
     } catch (err) {
       throw err;
     }
   }
 
-  static async updateUserPreferences(userId, updateData) {
+  async updateUserPreferences(userId, updateData) {
     try {
-      const preferences = await User.updatePreferences(userId, updateData);
+      const preferences = await this.userRepository.updatePreferences(userId, updateData);
       if (!preferences) {
         throw new Error('User not found');
       }
@@ -127,9 +131,9 @@ class UserService {
     }
   }
 
-  static async getUserPreferences(userId) {
+  async getUserPreferences(userId) {
     try {
-      const preferences = await User.findPreferencesByID(userId);
+      const preferences = await this.userRepository.findPreferencesByID(userId);
       if (!preferences) throw new Error('User Not Found');
       return preferences;
     } catch (err) {
@@ -137,25 +141,25 @@ class UserService {
     }
   }
 
-  static async getUserWalletBalance(transaction, userId){
+  async getUserWalletBalance(transaction, userId){
     try{
-      return await User.getWalletBalanceByUserId(transaction, userId);
+      return await this.userRepository.getWalletBalanceByUserId(transaction, userId);
     } catch(err){
       throw err;
     }
   }
 
-  static async removeFcmTokens(userId, tokensToRemove) {
+  async removeFcmTokens(userId, tokensToRemove) {
     try {
-      await User.removeFcmTokens(userId, tokensToRemove);
+      await this.userRepository.removeFcmTokens(userId, tokensToRemove);
     } catch (err) {
       throw err;
     }
   }
 
-  static async addNewFcmToken(userId, newToken) {
+  async addNewFcmToken(userId, newToken) {
     try {
-      await User.addFcmToken(userId, newToken);
+      await this.userRepository.addFcmToken(userId, newToken);
     } catch (err) {
       throw err;
     }

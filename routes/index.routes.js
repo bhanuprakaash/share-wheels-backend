@@ -1,22 +1,26 @@
 const express = require('express');
 const userRoutes = require('./user.routes');
 const vehicleRoutes = require('./vehicle.routes');
-const tripRouts = require('./trip.routes');
+const tripRoutes = require('./trip.routes');
 const bookingRoutes = require('./booking.routes');
 
 const router = express.Router();
 
-router.use('/user', userRoutes);
-router.use('/vehicle', vehicleRoutes);
-router.use('/trip', tripRouts);
-router.use('/booking', bookingRoutes);
+module.exports = ({...controllers})=>{
+  const { bookingController, tripController, userController, vehicleController} = controllers;
 
-router.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Server is running',
-    timestamp: new Date().toISOString(),
-  });
-});
+  router.use('/user',userRoutes({userController}));
+  router.use('/vehicle',vehicleRoutes({vehicleController}));
+  router.use('/trip',tripRoutes({tripController}));
+  router.use('/booking',bookingRoutes({bookingController}));
 
-module.exports = router;
+  router.get('/health',(req, res) => {
+    res.json({
+      success: true,
+      message: 'Server is running',
+      timestamp: new Date().toISOString(),
+    });
+  })
+
+  return router;
+};

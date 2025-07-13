@@ -1,15 +1,17 @@
-const Booking = require('../models/booking.model');
-const { db } = require('../config/db');
-const UserService = require('./user.service');
-const Trip = require('../models/trip.model');
-const TripService = require('./trip.service');
-
 class BookingService {
-  static async bookTrip(bookingData) {
+
+  constructor(bookingRepository, dbClient, userService, tripService){
+    this.bookingRepository = bookingRepository;
+    this.dbClient = dbClient;
+    this.userService = userService;
+    this.tripService = tripService;
+  }
+  
+  async bookTrip(bookingData) {
     try {
       const { trip_id, rider_id, booked_seats, fare_amount } = bookingData;
 
-      return await db.tx(async (transaction) => {
+      return await this.dbClient.tx(async (transaction) => {
         const actualFareAmount = Number(fare_amount);
         if (isNaN(actualFareAmount) || actualFareAmount < 0) {
           throw new Error(
@@ -24,14 +26,14 @@ class BookingService {
         }
 
         // check: rider balance and available seats on the trip
-        const balanceResult = await UserService.getUserWalletBalance(
+        const balanceResult = await this.userService.getUserWalletBalance(
           transaction,
           rider_id,
           actualFareAmount
         );
         if (balanceResult.wallet <= actualFareAmount)
           throw new Error('InSufficient Balance');
-        const { available_seats } = await TripService.getAvailableSeats(
+        const { available_seats } = await this.tripService.getAvailableSeats(
           transaction,
           trip_id
         );
@@ -39,7 +41,7 @@ class BookingService {
           throw new Error('Trip Seats are Full');
 
         //create: booking record
-        const booking = await Booking.addBooking(transaction, {
+        const booking = await this.bookingRepository.addBooking(transaction, {
           ...bookingData,
           booked_seats: actualBookedSeats,
           fare_amount: actualFareAmount,
@@ -49,13 +51,13 @@ class BookingService {
         }
 
         //update: user wallet and trip seats
-        await UserService.updateUserBalance(
+        await this.userService.updateUserBalance(
           transaction,
           rider_id,
           'hold_amount',
           actualFareAmount
         );
-        await UserService.updateUserBalance(
+        await this.userService.updateUserBalance(
           transaction,
           rider_id,
           'wallet',
@@ -69,12 +71,12 @@ class BookingService {
     }
   }
 
-  static async updateBookingStatusByDriver(bookingData) {
+  async updateBookingStatusByDriver(bookingData) {
     const { booking_id, booking_status } = bookingData;
 
     try {
-      return await db.tx(async (transaction) => {
-        const currentBookingDetails = await Booking.getBookingById(
+      return await this.dbClient.tx(async (transaction) => {
+        const currentBookingDetails = await this.bookingRepository.getBookingById(
           transaction,
           booking_id
         );
@@ -84,7 +86,7 @@ class BookingService {
           fare_amount,
           booked_seats
         } = currentBookingDetails;
-        const driverResponse = await Booking.updateBookingStatus(transaction, {
+        const driverResponse = await this.bookingRepository.updateBookingStatus(transaction, {
           booking_id: booking_id,
           trip_id: trip_id,
           rider_id: rider_id,
@@ -93,7 +95,7 @@ class BookingService {
         });
         if (driverResponse) {
           if (driverResponse.bookings_status === 'ACCEPTED') {
-            const updateSeatsResult = await TripService.updateSeatsInTrip(
+            const updateSeatsResult = await this.tripService.updateSeatsInTrip(
               transaction,
               trip_id,
               booked_seats
@@ -107,13 +109,13 @@ class BookingService {
               );
             }
           } else if (driverResponse.bookings_status === 'REJECTED') {
-            await UserService.updateUserBalance(
+            await this.userService.updateUserBalance(
               transaction,
               rider_id,
               'hold_amount',
               -Number(fare_amount)
             );
-            await UserService.updateUserBalance(
+            await this.userService.updateUserBalance(
               transaction,
               rider_id,
               'wallet',
@@ -128,10 +130,10 @@ class BookingService {
     }
   }
 
-  static async updateBookingStatusByRider(bookingData) {
+  async updateBookingStatusByRider(bookingData) {
     const { statusRequestedByUser } = bookingData;
     try {
-      return await db.tx(async (transaction) => {
+      return await this.dbClient.tx(async (transaction) => {
         switch (statusRequestedByUser) {
           case 'CANCELLED':
             return await this._handleCancellation(transaction, bookingData);
@@ -146,9 +148,9 @@ class BookingService {
     }
   }
 
-  static async _handleCancellation(transaction, bookingData) {
+  async _handleCancellation(transaction, bookingData) {
     const { booking_id, driver_id } = bookingData;
-    const currentBookingDetails = await Booking.getBookingById(
+    const currentBookingDetails = await this.bookingRepository.getBookingById(
       transaction,
       booking_id
     );
@@ -175,19 +177,19 @@ class BookingService {
 
     if (currentBookingStatus === 'ACCEPTED') {
       updates.push(
-        UserService.updateUserBalance(
+        this.userService.updateUserBalance(
           transaction,
           driver_id,
           'wallet',
           Number(fare_amount) / 2
         ),
-        UserService.updateUserBalance(
+        this.userService.updateUserBalance(
           transaction,
           rider_id,
           'wallet',
           Number(fare_amount) / 2
         ),
-        UserService.updateUserBalance(
+        this.userService.updateUserBalance(
           transaction,
           rider_id,
           'hold_amount',
@@ -196,13 +198,13 @@ class BookingService {
       );
     } else if (currentBookingDetails === 'PENDING') {
       updates.push(
-        UserService.updateUserBalance(
+        this.userService.updateUserBalance(
           transaction,
           rider_id,
           'hold_amount',
           -Number(fare_amount)
         ),
-        UserService.updateUserBalance(
+        this.userService.updateUserBalance(
           transaction,
           rider_id,
           'wallet',
@@ -212,21 +214,21 @@ class BookingService {
     }
 
     updates.push(
-      Booking.updateBookingStatus(transaction, {
+      this.bookingRepository.updateBookingStatus(transaction, {
         ...currentBookingDetails,
         statusToExclude: ['CANCELLED', 'REJECTED'],
         statusRequestedByUser: userRequestStatus,
       }),
-      Trip.updateSeatsInTrip(transaction, trip_id, -booked_seats)
+      this.tripService.updateSeatsInTrip(transaction, trip_id, -booked_seats)
     );
 
     await transaction.batch(updates);
     return { booking_id: booking_id };
   }
 
-  static async _handleConfirmation(transaction, bookingData) {
+  async _handleConfirmation(transaction, bookingData) {
     const { booking_id, driver_id } = bookingData;
-    const currentBookingDetails = await Booking.getBookingById(
+    const currentBookingDetails = await this.bookingRepository.getBookingById(
       transaction,
       booking_id
     );
@@ -235,19 +237,19 @@ class BookingService {
     const { rider_id, fare_amount } = currentBookingDetails;
     let updates = [];
     updates.push(
-      UserService.updateUserBalance(
+      this.userService.updateUserBalance(
         transaction,
         rider_id,
         'hold_amount',
         -Number(fare_amount)
       ),
-      UserService.updateUserBalance(
+      this.userService.updateUserBalance(
         transaction,
         driver_id,
         'wallet',
         Number(fare_amount)
       ),
-      Booking.updateBookingStatus(transaction, {
+      this.bookingRepository.updateBookingStatus(transaction, {
         ...currentBookingDetails,
         statusToExclude: ['CANCELLED', 'REJECTED'],
         statusRequestedByUser: 'COMPLETED',

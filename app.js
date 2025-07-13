@@ -2,11 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-// const routes = require('./routes');
+
 const errorHandler = require('./middleware/errorHandler');
 const config = require('./config/env');
 const db = require('./config/db');
-
+const setupDependencies = require('./config/di.config');
 const app = express();
 
 let server;
@@ -21,17 +21,12 @@ app.use(express.urlencoded({ extended: true }));
 async function startServer() {
   try {
     await db.connect();
-    try {
-      const routes = require('./routes/index.routes');
-      app.use('/api', routes); // Mount routes
-    } catch (routeError) {
-      console.error(
-        'Error loading or applying routes. This might be due to a missing callback function in a route definition:',
-        routeError.message
-      );
-      // Re-throw the error to ensure the server does not start with broken routes
-      throw routeError;
-    }
+
+    const {controllers} = await setupDependencies();
+
+    const routes = require('./routes/index.routes')(controllers);
+
+    app.use('/api', routes);
 
     app.use('*', (req, res) => {
       res.status(404).json({
