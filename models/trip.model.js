@@ -197,7 +197,7 @@ class Trip {
     }
   }
 
-  async updateByStatus(tripId, status) {
+  async updateByStatus(tripId, status,transaction=this.db) { 
     try {
       const validStatuses = [
         'SCHEDULED',
@@ -234,7 +234,7 @@ class Trip {
       query += ' WHERE trip_id = $2 RETURNING trip_status';
       params.push(tripId);
 
-      return await this.db.one(query, params);
+      return await transaction.one(query, params);
     } catch (err) {
       throw err;
     }

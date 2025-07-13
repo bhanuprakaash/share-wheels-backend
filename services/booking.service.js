@@ -148,6 +148,29 @@ class BookingService {
     }
   }
 
+  async checkAndMarkTripAsCompleted(transaction, trip_id) {
+    const total_bookings = await this.bookingRepository.countBookingsForTrip(
+      transaction,
+      trip_id,
+    );
+
+    const completed_bookings = await this.bookingRepository.countCompletedBookingsForTrip(
+      transaction,
+      trip_id
+    );
+
+    if (total_bookings === completed_bookings) {
+      await this.tripService.updateTripStatus(
+        trip_id,
+        'COMPLETED',
+        transaction
+      );
+      return true;
+    } else {
+      return false; 
+    }
+  }
+
   async _handleCancellation(transaction, bookingData) {
     const { booking_id, driver_id } = bookingData;
     const currentBookingDetails = await this.bookingRepository.getBookingById(
@@ -253,7 +276,8 @@ class BookingService {
         ...currentBookingDetails,
         statusToExclude: ['CANCELLED', 'REJECTED'],
         statusRequestedByUser: 'COMPLETED',
-      })
+      }),
+      this.checkAndMarkTripAsCompleted(transaction, currentBookingDetails.trip_id)
     );
     await transaction.batch(updates);
     return {

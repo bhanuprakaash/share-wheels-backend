@@ -67,9 +67,9 @@ class TripService {
     }
   }
 
-  async updateTripStatus(tripId, status) {
+  async updateTripStatus(tripId, status,transaction=undefined) {
     try {
-      return await this.tripRepository.updateByStatus(tripId, status);
+      return await this.tripRepository.updateByStatus(tripId, status,transaction);
     } catch (err) {
       throw err;
     }

@@ -85,6 +85,34 @@ class Booking {
       throw err;
     }
   }
+
+  async countBookingsForTrip(dbInstance = this.db, trip_id) {
+    try {
+      const query = `
+        SELECT COUNT(booking_id) AS count
+        FROM bookings
+        WHERE trip_id = $1
+      `;
+      const result = await dbInstance.one(query, [trip_id]);
+      return parseInt(result.count, 10);
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  async countCompletedBookingsForTrip(dbInstance = this.db, trip_id) {
+    try {
+      const query = `
+        SELECT COUNT(booking_id) AS count
+        FROM bookings
+        WHERE trip_id = $1 AND bookings_status = 'COMPLETED'
+      `;
+      const result = await dbInstance.one(query, [trip_id]);
+      return parseInt(result.count, 10);
+    } catch (err) {
+      throw err;
+    }
+  }
 }
 
-module.exports = Booking;
+module.exports = Booking; 
