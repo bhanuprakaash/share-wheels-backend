@@ -1,6 +1,5 @@
 class BookingService {
-
-  constructor(bookingRepository, dbClient, userService, tripService){
+  constructor(bookingRepository, dbClient, userService, tripService) {
     this.bookingRepository = bookingRepository;
     this.dbClient = dbClient;
     this.userService = userService;
@@ -76,23 +75,20 @@ class BookingService {
 
     try {
       return await this.dbClient.tx(async (transaction) => {
-        const currentBookingDetails = await this.bookingRepository.getBookingById(
+        const currentBookingDetails =
+          await this.bookingRepository.getBookingById(transaction, booking_id);
+        const { trip_id, rider_id, fare_amount, booked_seats } =
+          currentBookingDetails;
+        const driverResponse = await this.bookingRepository.updateBookingStatus(
           transaction,
-          booking_id
+          {
+            booking_id: booking_id,
+            trip_id: trip_id,
+            rider_id: rider_id,
+            statusRequestedByUser: booking_status,
+            statusToExclude: ['ACCEPTED', 'REJECTED', 'COMPLETED', 'CANCELLED'],
+          }
         );
-        const {
-          trip_id,
-          rider_id,
-          fare_amount,
-          booked_seats
-        } = currentBookingDetails;
-        const driverResponse = await this.bookingRepository.updateBookingStatus(transaction, {
-          booking_id: booking_id,
-          trip_id: trip_id,
-          rider_id: rider_id,
-          statusRequestedByUser: booking_status,
-          statusToExclude: ['ACCEPTED', 'REJECTED', 'COMPLETED', 'CANCELLED'],
-        });
         if (driverResponse) {
           if (driverResponse.bookings_status === 'ACCEPTED') {
             const updateSeatsResult = await this.tripService.updateSeatsInTrip(
@@ -151,13 +147,14 @@ class BookingService {
   async checkAndMarkTripAsCompleted(transaction, trip_id) {
     const total_bookings = await this.bookingRepository.countBookingsForTrip(
       transaction,
-      trip_id,
-    );
-
-    const completed_bookings = await this.bookingRepository.countCompletedBookingsForTrip(
-      transaction,
       trip_id
     );
+
+    const completed_bookings =
+      await this.bookingRepository.countCompletedBookingsForTrip(
+        transaction,
+        trip_id
+      );
 
     if (total_bookings === completed_bookings) {
       await this.tripService.updateTripStatus(
@@ -167,7 +164,39 @@ class BookingService {
       );
       return true;
     } else {
-      return false; 
+      return false;
+    }
+  }
+
+  async onTripCancelled({tripId, transaction}) {
+    if(!transaction){
+      throw new Error("Transaction is required for booking cancellation");
+    }
+    try{
+      const activeBookings = await this.bookingRepository.getActiveBookingsByTripId(transaction, tripId);
+      for(const booking of activeBookings){
+        await this.bookingRepository.updateBookingStatus(transaction, {
+          trip_id: booking.trip_id,
+          rider_id: booking.rider_id,
+          booking_id: booking.booking_id,
+          statusToExclude: ['CANCELLED', 'REJECTED'],
+          statusRequestedByUser: 'CANCELLED',
+        });
+        await this.userService.updateUserBalance(
+          transaction,
+          booking.rider_id,
+          'wallet',
+          Number(booking.fare_amount)
+        );
+        await this.userService.updateUserBalance(
+          transaction,
+          booking.rider_id,
+          'hold_amount',
+          -Number(booking.fare_amount)
+        );
+      }
+    }catch (err){
+      throw err;
     }
   }
 
@@ -277,7 +306,10 @@ class BookingService {
         statusToExclude: ['CANCELLED', 'REJECTED'],
         statusRequestedByUser: 'COMPLETED',
       }),
-      this.checkAndMarkTripAsCompleted(transaction, currentBookingDetails.trip_id)
+      this.checkAndMarkTripAsCompleted(
+        transaction,
+        currentBookingDetails.trip_id
+      )
     );
     await transaction.batch(updates);
     return {

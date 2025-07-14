@@ -1,8 +1,29 @@
 class TripService {
 
-  constructor(tripRepository){
+  constructor(tripRepository,dbClient) {
     this.tripRepository = tripRepository;
+    this.db = dbClient;
+    this.observers = [];
   }
+
+  addObserver(observer){
+    if(!this.observers.includes(observer)){
+      this.observers.push(observer);
+    }
+  }
+
+  async notifyObservers(eventName, data){
+    for(const observer of this.observers){
+      if(typeof observer[eventName] === 'function'){
+        try{
+          await observer[eventName](data);
+        }catch(observerError){
+          throw observerError;
+        }
+      }
+    }
+  }
+
 
   async createTrip(tripData, waypoints = []) {
     try {
@@ -36,7 +57,6 @@ class TripService {
       if (!tripWithWaypoints) {
         throw new Error('Trip not found');
       }
-
       return tripWithWaypoints;
     } catch (err) {
       throw err;
@@ -69,7 +89,14 @@ class TripService {
 
   async updateTripStatus(tripId, status,transaction=undefined) {
     try {
-      return await this.tripRepository.updateByStatus(tripId, status,transaction);
+      if(status === 'CANCELLED'){
+        return await this.db.tx(async(t)=>{
+          const updatedTrip = await this.tripRepository.updateByStatus(tripId, status,t);
+          await this.notifyObservers('onTripCancelled', {tripId: updatedTrip.trip_id, transaction: t})
+          return updatedTrip;
+        })
+      }
+     return await this.tripRepository.updateByStatus(tripId, status,transaction);
     } catch (err) {
       throw err;
     }

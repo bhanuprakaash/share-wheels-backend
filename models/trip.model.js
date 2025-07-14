@@ -231,7 +231,7 @@ class Trip {
         query += ', actual_end_time = COALESCE(actual_end_time, NOW())';
       }
 
-      query += ' WHERE trip_id = $2 RETURNING trip_status';
+      query += ' WHERE trip_id = $2 RETURNING trip_id, trip_status';
       params.push(tripId);
 
       return await transaction.one(query, params);

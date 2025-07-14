@@ -1,5 +1,5 @@
 class Booking {
-  constructor(dbClient){
+  constructor(dbClient) {
     this.db = dbClient;
   }
   async addBooking(transaction = this.db, bookingData) {
@@ -113,6 +113,20 @@ class Booking {
       throw err;
     }
   }
+
+  async getActiveBookingsByTripId(transaction = this.db, trip_id) {
+    try {
+      const query = `
+        SELECT *
+        FROM bookings
+        WHERE trip_id = $1
+        AND bookings_status NOT IN ('CANCELLED', 'COMPLETED', 'REJECTED')
+      `;
+      return await transaction.any(query, [trip_id]);
+    } catch (err) {
+      throw err;
+    }
+  }
 }
 
-module.exports = Booking; 
+module.exports = Booking;

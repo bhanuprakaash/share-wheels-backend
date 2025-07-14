@@ -33,13 +33,16 @@ async function setupDependencies() {
   // Initialize Services
   const userService = new UserService(userRepository);
   const vehicleService = new VehicleService(vehicleRepository);
-  const tripService = new TripService(tripRepository);
+  const tripService = new TripService(tripRepository, dbClient);
   const bookingService = new BookingService(
     bookingRepository,
     dbClient,
     userService,
     tripService
   );
+
+  //Observers
+  tripService.addObserver(bookingService);
 
   // Initialize Controllers
   const userController = new UserController(userService);
