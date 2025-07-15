@@ -10,8 +10,12 @@ module.exports = {
   DB_URL: process.env.DB_URL,
   JWT_SECRET: process.env.JWT_SECRET,
   BCRYPT_ROUNDS: parseInt(process.env.BCRYPT_ROUNDS) || 10,
+
+  // here maps
   HERE_MAPS_API_KEY: process.env.HERE_MAPS_API_KEY,
   HERE_MAPS_APP_ID: process.env.HERE_MAPS_APP_ID,
+
+  // firebase
   FCM_TYPE: process.env.FCM_TYPE,
   FCM_PROJECT_ID: process.env.FCM_PROJECT_ID,
   FCM_PRIVATE_KEY_ID: process.env.FCM_PRIVATE_KEY_ID,
@@ -23,4 +27,11 @@ module.exports = {
   FCM_AUTH_PROVIDER_CERT_URL: process.env.FCM_AUTH_PROVIDER_CERT_URL,
   FCM_CLIENT_CERT_URL: process.env.FCM_CLIENT_CERT_URL,
   FCM_UNIVERSE_DOMAIN: process.env.FCM_UNIVERSE_DOMAIN,
+
+  //Redis
+  REDIS_HOST:process.env.REDIS_HOST,
+  REDIS_PORT:process.env.REDIS_PORT,
+  REDIS_PASSWORD:process.env.REDIS_PASSWORD,
+  REDIS_DB:process.env.REDIS_DB,
+  REDIS_PREFIX:process.env.REDIS_PREFIX,
 };

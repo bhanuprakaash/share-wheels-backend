@@ -7,6 +7,7 @@ const errorHandler = require('./middleware/errorHandler');
 const config = require('./config/env');
 const db = require('./config/db');
 const setupDependencies = require('./config/di.config');
+const { disconnectRedis } = require('./config/redis');
 const app = express();
 
 let server;
@@ -47,18 +48,22 @@ async function startServer() {
 
 startServer();
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   console.log('Received SIGINT. Graceful shutdown...');
-  server.close(() => {
+  server.close(async () => {
     console.log('Process terminated');
+    await db.disconnect();
+    await disconnectRedis()
     process.exit(0);
   });
 });
 
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('Received SIGTERM. Graceful shutdown...');
-  server.close(() => {
+  server.close(async () => {
     console.log('Process terminated');
+    await db.disconnect();
+    await disconnectRedis();
     process.exit(0);
   });
 });
