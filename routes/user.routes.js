@@ -11,6 +11,7 @@ module.exports = ({userController})=>{
   //private routes
   router.use(authenticateToken);
   router.get('/:id', userController.getUser);
+  router.get('/verify/me',userController.getCurrentUser)
   router.patch('/:id', userController.updateUser);
   router.patch('/reset-password/:id', userController.updateUserPassword);
   router.delete('/:id', userController.deleteUser);

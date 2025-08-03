@@ -60,7 +60,7 @@ class User {
   async findByUserId(userId) {
     const query = `
       SELECT email,
-             password,
+             user_id,
              phone_number,
              first_name,
              last_name,
@@ -68,7 +68,11 @@ class User {
              date_of_birth,
              gender,
              bio,
-             fcm_tokens
+             fcm_tokens,
+             wallet,
+             hold_amount,
+             is_active,
+             created_at
       FROM users
       WHERE user_id = $1`;
     try {
@@ -80,20 +84,20 @@ class User {
 
   async findByEmail(email) {
     const query = `
-      SELECT user_id,
-             email,
+      SELECT email,
+             user_id,
              phone_number,
-             password,
              first_name,
              last_name,
              profile_picture,
              date_of_birth,
              gender,
              bio,
+             fcm_tokens,
              is_active,
-             created_at,
-             updated_at,
-             last_login_at
+             wallet,
+             hold_amount,
+             password
       FROM users
       WHERE email = $1`;
     try {
@@ -121,7 +125,7 @@ class User {
     const updateQuery =
       this.pgp.helpers.update(cleanData, null, 'users') +
       condition +
-      ' RETURNING user_id, email, phone_number, first_name, profile_picture, date_of_birth, gender, bio, is_active, created_at, updated_at';
+      ' RETURNING user_id, email, first_name, last_name, profile_picture, date_of_birth, gender, bio, is_active, fcm_tokens, wallet, hold_amount, phone_number';
 
     try {
       return await this.db.oneOrNone(updateQuery);
@@ -218,7 +222,7 @@ class User {
                      SET password   = $1,
                          updated_at = CURRENT_TIMESTAMP
                      WHERE user_id = $2
-                     RETURNING user_id, email, updated_at`;
+                     RETURNING user_id, email`;
       return await this.db.oneOrNone(query, [hashedPassword, userId]);
     } catch (err) {
       throw err;
@@ -240,7 +244,7 @@ class User {
     const updateQuery =
       this.pgp.helpers.update(cleanData, null, 'user_preferences') +
       condition +
-      ' RETURNING user_id, allow_smoking, music_genre, has_pets, is_pet_friendly, communication_preference, seat_preference, updated_at';
+      ' RETURNING user_id, allow_smoking, music_genre, has_pets, is_pet_friendly, communication_preference, seat_preference';
     try {
       return await this.db.oneOrNone(updateQuery);
     } catch (err) {
@@ -256,7 +260,7 @@ class User {
              is_pet_friendly,
              communication_preference,
              seat_preference,
-             updated_at
+             user_id
       FROM user_preferences
       WHERE user_id = $1`;
     try {

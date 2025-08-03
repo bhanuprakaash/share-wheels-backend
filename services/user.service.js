@@ -3,8 +3,7 @@ const config = require('../config/env');
 const bcrypt = require('bcryptjs');
 
 class UserService {
-
-  constructor(userRepository){
+  constructor(userRepository) {
     this.userRepository = userRepository;
   }
 
@@ -14,7 +13,10 @@ class UserService {
         this.validateUser(userData),
         bcrypt.hash(userData.password, config.BCRYPT_ROUNDS),
       ]);
-      return await this.userRepository.create({ ...userData, password: hashedPassword });
+      return await this.userRepository.create({
+        ...userData,
+        password: hashedPassword,
+      });
     } catch (err) {
       throw new Error(`User Creation Failed: ${err.message}`);
     }
@@ -50,8 +52,8 @@ class UserService {
       const { password: _, ...userWithoutPassword } = user;
 
       return {
-        user: userWithoutPassword,
-        token,
+        ...userWithoutPassword,
+        token: token,
       };
     } catch (err) {
       throw err;
@@ -64,7 +66,19 @@ class UserService {
       if (!user) {
         throw new Error('User not found');
       }
-      const { password: _, ...userWithoutPassword } = user;
+      const userToReturn = { ...user };
+
+      if (userToReturn.date_of_birth) {
+        try {
+          const dateObject = new Date(userToReturn.date_of_birth);
+          if (!isNaN(dateObject.getTime())) {
+            userToReturn.date_of_birth = dateObject.toISOString().split('T')[0];
+          }
+        } catch (dateError) {
+          console.error('Error formatting date_of_birth:', dateError);
+        }
+      }
+      const { password: _, ...userWithoutPassword } = userToReturn;
       return userWithoutPassword;
     } catch (error) {
       throw error;
@@ -83,11 +97,16 @@ class UserService {
     }
   }
 
-  async updateUserBalance(transaction, userId, columnName, amount){
-    try{
-      const updatedData = await this.userRepository.updateBalance(transaction, userId, columnName, amount);
+  async updateUserBalance(transaction, userId, columnName, amount) {
+    try {
+      const updatedData = await this.userRepository.updateBalance(
+        transaction,
+        userId,
+        columnName,
+        amount
+      );
       return updatedData;
-    } catch(err){
+    } catch (err) {
       throw err;
     }
   }
@@ -121,7 +140,10 @@ class UserService {
 
   async updateUserPreferences(userId, updateData) {
     try {
-      const preferences = await this.userRepository.updatePreferences(userId, updateData);
+      const preferences = await this.userRepository.updatePreferences(
+        userId,
+        updateData
+      );
       if (!preferences) {
         throw new Error('User not found');
       }
@@ -141,10 +163,13 @@ class UserService {
     }
   }
 
-  async getUserWalletBalance(transaction, userId){
-    try{
-      return await this.userRepository.getWalletBalanceByUserId(transaction, userId);
-    } catch(err){
+  async getUserWalletBalance(transaction, userId) {
+    try {
+      return await this.userRepository.getWalletBalanceByUserId(
+        transaction,
+        userId
+      );
+    } catch (err) {
       throw err;
     }
   }

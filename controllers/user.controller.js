@@ -37,8 +37,22 @@ class UserController  {
       res.json({
         success: true,
         data: user,
+        message: 'User Data Fetched Successfully',
       });
     } catch (err) {
+      next(err);
+    }
+  }
+  getCurrentUser = async(req, res, next) => {
+    try{
+      const userId = req.user.userId; // getting from token
+      const user = await this.userService.getUserById(userId);
+      res.json({
+        success: true,
+        data: user,
+        message: 'Current User Data Fetched Successfully',
+      });
+    } catch (err){
       next(err);
     }
   }
@@ -106,6 +120,7 @@ class UserController  {
       res.json({
         success: true,
         data: preferences,
+        message: 'User Preferences Fetched Successfully',
       });
     } catch (err) {
       next(err);
@@ -141,6 +156,6 @@ class UserController  {
   //     next(err);
   //   }
   // }
-};
+}
 
 module.exports = UserController;
