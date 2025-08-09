@@ -11,6 +11,7 @@ class VehicleController {
       res.status(200).json({
         success: true,
         data: vehicle,
+        message: 'Vehicle Fetched Successfully',
       });
     } catch (error) {
       next(error);
@@ -25,6 +26,7 @@ class VehicleController {
       res.status(200).json({
         success: true,
         data: vehicles,
+        message: 'Vehicles Fetched Successfully',
       });
     } catch (error) {
       next(error);
@@ -59,6 +61,7 @@ class VehicleController {
         return res.status(403).json({
           success: false,
           message: 'You can only update your own vehicles',
+          data: null,
         });
       }
 
@@ -87,6 +90,7 @@ class VehicleController {
         return res.status(403).json({
           success: false,
           message: 'You can only delete your own vehicles',
+          data: null,
         });
       }
 
@@ -95,6 +99,9 @@ class VehicleController {
       res.status(200).json({
         success: true,
         message: 'Vehicle deleted successfully',
+        data: {
+          vehicle_id: vehicleId,
+        },
       });
     } catch (error) {
       next(error);

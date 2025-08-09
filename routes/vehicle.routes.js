@@ -9,7 +9,7 @@ module.exports = ({vehicleController})=>{
     router.get('/my-vehicles', vehicleController.getMyVehicles);
     router.post('/', vehicleController.createVehicle);
     router.get('/:vehicleId', vehicleController.getVehicleById);
-    router.put('/:vehicleId', vehicleController.updateVehicle);
+    router.patch('/:vehicleId', vehicleController.updateVehicle);
     router.delete('/:vehicleId', vehicleController.deleteVehicle);
 
     return router;
