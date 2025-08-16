@@ -1,7 +1,5 @@
-
 class VehicleService {
-
-  constructor(vehicleRepository){
+  constructor(vehicleRepository) {
     this.vehicleRepository = vehicleRepository;
   }
 

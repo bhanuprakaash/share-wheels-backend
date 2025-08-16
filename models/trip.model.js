@@ -11,15 +11,38 @@ class Trip {
     try {
       return await this.db.tx(async (t) => {
         const tripQuery = `
-                    INSERT INTO trips (driver_id, vehicle_id, start_location_name, start_address_line1, start_geopoint,
-                                       end_location_name, end_address_line1, end_geopoint, departure_time,
-                                       estimated_arrival_time, available_seats, price_per_seat, trip_status,
-                                       trip_description)
-                    VALUES ($1, $2, $3, $4, st_geomfromtext($5, 4326)::geography, $6, $7,
-                            st_geomfromtext($8, 4326)::geography, $9, $10,
-                            $11, $12, $13, $14)
-                    RETURNING *
-                `;
+          INSERT INTO trips (driver_id, vehicle_id, start_location_name, start_address_line1, start_geopoint,
+                             end_location_name, end_address_line1, end_geopoint, departure_time,
+                             estimated_arrival_time, available_seats, price_per_seat, trip_status,
+                             trip_description)
+          VALUES ($1, $2, $3, $4, st_geomfromtext($5, 4326)::geography, $6, $7,
+                  st_geomfromtext($8, 4326)::geography, $9, $10,
+                  $11, $12, $13, $14)
+          RETURNING
+            trip_id,
+            driver_id,
+            vehicle_id,
+            start_location_name,
+            start_address_line1,
+            json_build_object(
+              'lat', ST_Y(start_geopoint::geometry),
+              'lng', ST_X(start_geopoint::geometry)
+            ) AS start_geopoint,
+            end_location_name,
+            end_address_line1,
+            json_build_object(
+              'lat', ST_Y(end_geopoint::geometry),
+              'lng', ST_X(end_geopoint::geometry)
+            ) AS end_geopoint,
+            departure_time,
+            estimated_arrival_time,
+            available_seats,
+            price_per_seat,
+            trip_status,
+            trip_description,
+            created_at,
+            updated_at
+        `;
 
         const trip = await t.one(tripQuery, [
           tripData.driver_id,
@@ -64,47 +87,51 @@ class Trip {
   async findById(tripId) {
     try {
       const tripQuery = `
-                SELECT t.trip_id,
-                       t.driver_id,
-                       t.vehicle_id,
-                       t.start_location_name,
-                       t.start_address_line1,
-                       ST_AsText(t.start_geopoint)                       as start_geopoint,
-                       t.end_location_name,
-                       t.end_address_line1,
-                       ST_AsText(t.end_geopoint)                         as end_geopoint,
-                       t.departure_time,
-                       t.estimated_arrival_time,
-                       t.available_seats,
-                       t.price_per_seat,
-                       t.trip_status,
-                       t.trip_description,
-                       t.actual_start_time,
-                       t.actual_end_time,
-                       t.created_at,
-                       t.updated_at,
-                       ST_AsText(t.polyline_path)                        as polyline_path,
-                       u.first_name || ' ' || u.last_name                as driver_name,
-                       u.phone_number                                    as driver_phone,
-                       v.make || ' ' || v.model || ' (' || v.year || ')' as vehicle_info
-                FROM trips t
-                         LEFT JOIN users u ON t.driver_id = u.user_id
-                         LEFT JOIN vehicles v ON t.vehicle_id = v.vehicle_id
-                WHERE t.trip_id = $1
-            `;
+        SELECT t.trip_id,
+               t.driver_id,
+               t.vehicle_id,
+               t.start_location_name,
+               t.start_address_line1,
+               json_build_object(
+                 'lat', ST_Y(start_geopoint::geometry),
+                 'lng', ST_X(start_geopoint::geometry)
+               )                          AS start_geopoint,
+               t.end_location_name,
+               t.end_address_line1,
+               json_build_object(
+                 'lat', ST_Y(end_geopoint::geometry),
+                 'lng', ST_X(end_geopoint::geometry)
+               )                          AS end_geopoint,
+               t.departure_time,
+               t.estimated_arrival_time,
+               t.available_seats,
+               t.price_per_seat,
+               t.trip_status,
+               t.trip_description,
+               t.actual_start_time,
+               t.actual_end_time,
+               t.created_at,
+               t.updated_at,
+               ST_AsText(t.polyline_path) as polyline_path
+        FROM trips t
+        WHERE t.trip_id = $1
+      `;
       const waypointsQuery = `
-                SELECT waypoint_id,
-                       trip_id,
-                       location_name,
-                       address_line1,
-                       st_astext(geopoint) as geopoint,
-                       sequence_order,
-                       estimated_arrival_time,
-                       actual_arrival_time
-                FROM trip_waypoints
-                WHERE trip_id = $1
-                ORDER BY sequence_order
-            `;
+        SELECT waypoint_id,
+               trip_id,
+               location_name,
+               address_line1,
+               json_build_object(
+               'lat', ST_Y(geopoint::geometry),
+               'lng', ST_X(geopoint::geometry)
+               ) as geopoint,
+               sequence_order,
+               estimated_arrival_time,
+               actual_arrival_time
+        FROM trip_waypoints
+        WHERE trip_id = $1
+        ORDER BY sequence_order
+      `;
       const trip = await this.db.oneOrNone(tripQuery, [tripId]);
       if (!trip) return null;
 
@@ -124,8 +151,8 @@ class Trip {
       return await this.db.tx(async (t) => {
         const existingTrip = await t.oneOrNone(
           `SELECT trip_id, trip_status
-                                                        FROM trips
-                                                        WHERE trip_id = $1`,
+           FROM trips
+           WHERE trip_id = $1`,
           [tripId]
         );
         if (!existingTrip) {
@@ -166,14 +193,36 @@ class Trip {
         const updateQuery =
           this.pgp.helpers.update(dataToUpdate, null, 'trips') +
           condition +
-          ` RETURNING *`;
+          `RETURNING trip_id,
+            driver_id,
+            vehicle_id,
+            start_location_name,
+            start_address_line1,
+            json_build_object(
+              'lat', ST_Y(start_geopoint::geometry),
+              'lng', ST_X(start_geopoint::geometry)
+            ) AS start_geopoint,
+            end_location_name,
+            end_address_line1,
+            json_build_object(
+              'lat', ST_Y(end_geopoint::geometry),
+              'lng', ST_X(end_geopoint::geometry)
+            ) AS end_geopoint,
+            departure_time,
+            estimated_arrival_time,
+            available_seats,
+            price_per_seat,
+            trip_status,
+            trip_description,
+            created_at,
+            updated_at`;
 
         const updatedTrip = await t.one(updateQuery);
 
         await t.none(
           `DELETE
-                              FROM trip_waypoints
-                              WHERE trip_id = $1`,
+           FROM trip_waypoints
+           WHERE trip_id = $1`,
           [tripId]
         );
 
@@ -185,10 +234,8 @@ class Trip {
 
         const polyline = await this._generateAndSaveTripPolyline(t, tripId);
         return {
-          trip: {
-            ...updatedTrip,
-            polyline_path: polyline.polyline_path,
-          },
+          ...updatedTrip,
+          polyline_path: polyline.polyline_path,
           waypoints: updatedWaypoints,
         };
       });
@@ -197,7 +244,7 @@ class Trip {
     }
   }
 
-  async updateByStatus(tripId, status,transaction=this.db) { 
+  async updateByStatus(tripId, status, transaction = this.db) {
     try {
       const validStatuses = [
         'SCHEDULED',
@@ -219,10 +266,10 @@ class Trip {
       }
 
       let query = `
-                UPDATE trips
-                SET trip_status = $1,
-                    updated_at  = NOW()
-            `;
+        UPDATE trips
+        SET trip_status = $1,
+            updated_at  = NOW()
+      `;
       let params = [status];
 
       if (status === 'IN_PROGRESS') {
@@ -261,10 +308,84 @@ class Trip {
     }
   }
 
+  async findTripByDriverId(driverId) {
+    try {
+      const tripsQuery = `
+        SELECT t.trip_id,
+               t.driver_id,
+               t.vehicle_id,
+               t.start_location_name,
+               t.start_address_line1,
+               json_build_object(
+                 'lat', ST_Y(t.start_geopoint::geometry),
+                 'lng', ST_X(t.start_geopoint::geometry)
+               )                          AS start_geopoint,
+--                ST_AsText(t.start_geopoint) as start_geopoint,
+               t.end_location_name,
+               t.end_address_line1,
+               json_build_object(
+                 'lat', ST_Y(t.end_geopoint::geometry),
+                 'lng', ST_X(t.end_geopoint::geometry)
+               )                          AS end_geopoint,
+               t.departure_time,
+               t.estimated_arrival_time,
+               t.available_seats,
+               t.price_per_seat,
+               t.trip_status,
+               t.trip_description,
+               t.actual_start_time,
+               t.actual_end_time,
+               t.created_at,
+               t.updated_at,
+               ST_AsText(t.polyline_path) as polyline_path
+        FROM trips t
+        WHERE t.driver_id = $1
+        ORDER BY t.departure_time DESC;
+      `;
+
+      const waypointsQuery = `
+        SELECT waypoint_id,
+               trip_id,
+               location_name,
+               address_line1,
+               json_build_object(
+                 'lat', ST_Y(geopoint::geometry),
+                 'lng', ST_X(geopoint::geometry)
+               ) AS geopoint,
+               sequence_order,
+               estimated_arrival_time,
+               actual_arrival_time
+        FROM trip_waypoints
+        WHERE trip_id = $1
+        ORDER BY sequence_order;
+      `;
+
+      const trips = await this.db.any(tripsQuery, [driverId]);
+
+      if (trips.length === 0) {
+        return [];
+      }
+
+      return await Promise.all(
+        trips.map(async (trip) => {
+          const waypoints = await this.db.any(waypointsQuery, [trip.trip_id]);
+          return {
+            ...trip,
+            waypoints,
+          };
+        })
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async getAvailableSeatsByTripId(transaction, tripId) {
     try {
       const query = `
-      SELECT available_seats FROM trips WHERE trip_id=$1
+        SELECT available_seats
+        FROM trips
+        WHERE trip_id = $1
       `;
       return await transaction.oneOrNone(query, [tripId]);
     } catch (err) {
@@ -275,10 +396,11 @@ class Trip {
   async updateSeatsInTrip(transaction, tripId, bookedSeats) {
     try {
       const query = `
-      UPDATE trips
-      SET available_seats = available_seats - $1
-      WHERE trip_id = $2 AND available_seats >= $3
-      RETURNING available_seats,driver_id
+        UPDATE trips
+        SET available_seats = available_seats - $1
+        WHERE trip_id = $2
+          AND available_seats >= $3
+        RETURNING available_seats,driver_id
       `;
       return await transaction.oneOrNone(query, [
         bookedSeats,
@@ -321,16 +443,16 @@ class Trip {
       const radiusDegrees = radius_km / 111.32;
 
       let query = `
-            SELECT t.trip_id,
-                   t.driver_id,
-                   t.start_location_name,
-                   t.end_location_name,
-                   t.trip_status,
-                   t.departure_time,
-                   t.price_per_seat
-            FROM trips t
-            WHERE t.polyline_path IS NOT NULL
-        `;
+        SELECT t.trip_id,
+               t.driver_id,
+               t.start_location_name,
+               t.end_location_name,
+               t.trip_status,
+               t.departure_time,
+               t.price_per_seat
+        FROM trips t
+        WHERE t.polyline_path IS NOT NULL
+      `;
 
       const values = [];
       let paramIndex = 1;
@@ -460,24 +582,24 @@ class Trip {
 
   async _generateAndSaveTripPolyline(t, tripId) {
     const polylineUpdateQuery = `
-            UPDATE trips
-            SET polyline_path = ST_MakeLine(
-                    ARRAY [
-                        start_geopoint::geometry
-                        ] || ARRAY(
-                            SELECT geopoint::geometry
-                            FROM trip_waypoints
-                            WHERE trip_id = $1
-                            ORDER BY sequence_order
-                             ) || ARRAY [
-                        end_geopoint::geometry
-                        ]
-                                )::geography
-            WHERE trip_id = $1
-            RETURNING 
-                ST_AsText(polyline_path) AS polyline_path,
-                ST_Length(polyline_path) AS distance_meters
-        `;
+      UPDATE trips
+      SET polyline_path = ST_MakeLine(
+        ARRAY [
+          start_geopoint::geometry
+          ] || ARRAY(
+          SELECT geopoint::geometry
+          FROM trip_waypoints
+          WHERE trip_id = $1
+          ORDER BY sequence_order
+               ) || ARRAY [
+          end_geopoint::geometry
+          ]
+                          )::geography
+      WHERE trip_id = $1
+      RETURNING
+        ST_AsText(polyline_path) AS polyline_path,
+        ST_Length(polyline_path) AS distance_meters
+    `;
     try {
       return await t.one(polylineUpdateQuery, tripId);
     } catch (err) {
@@ -544,55 +666,54 @@ class Trip {
       );
 
       query = `
-            WITH relevant_waypoints AS (
-                SELECT tw.waypoint_id,
-                       tw.location_name,
-                       tw.estimated_arrival_time,
-                       tw.sequence_order,
-                       tw.geopoint,
-                       -- Pre-calculate distances to avoid repeated ST_DWithin calls
-                       ST_DWithin(tw.geopoint::geography,
-                                 ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography,
-                                 $4) as near_start,
-                       ST_DWithin(tw.geopoint::geography,
-                                 ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography,
-                                 $4) as near_end
-                FROM trip_waypoints tw
-                WHERE tw.trip_id = $1
-                  -- Use bounding box for faster initial filtering
-                  AND tw.geopoint && ST_Envelope(
-                        ST_Collect(
-                                ST_Expand(ST_SetSRID(ST_MakePoint($2, $3), 4326), $7),
-                                ST_Expand(ST_SetSRID(ST_MakePoint($5, $6), 4326), $7)
-                        )
-                      )
-                  -- Then apply the actual distance filters
-                  AND (
-                    ST_DWithin(tw.geopoint::geography,
-                              ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography,
-                              $4)
-                    OR ST_DWithin(tw.geopoint::geography,
-                                 ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography,
-                                 $4)
-                  )
-            )
-            SELECT waypoint_id,
-                   location_name,
-                   estimated_arrival_time,
+        WITH relevant_waypoints AS (SELECT tw.waypoint_id,
+                                           tw.location_name,
+                                           tw.estimated_arrival_time,
+                                           tw.sequence_order,
+                                           tw.geopoint,
+                                           -- Pre-calculate distances to avoid repeated ST_DWithin calls
+                                           ST_DWithin(tw.geopoint::geography,
+                                                      ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography,
+                                                      $4) as near_start,
+                                           ST_DWithin(tw.geopoint::geography,
+                                                      ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography,
+                                                      $4) as near_end
+                                    FROM trip_waypoints tw
+                                    WHERE tw.trip_id = $1
+                                      -- Use bounding box for faster initial filtering
+                                      AND tw.geopoint && ST_Envelope(
+                                      ST_Collect(
+                                        ST_Expand(ST_SetSRID(ST_MakePoint($2, $3), 4326), $7),
+                                        ST_Expand(ST_SetSRID(ST_MakePoint($5, $6), 4326), $7)
+                                      )
+                                                         )
+                                      -- Then apply the actual distance filters
+                                      AND (
+                                      ST_DWithin(tw.geopoint::geography,
+                                                 ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography,
+                                                 $4)
+                                        OR ST_DWithin(tw.geopoint::geography,
+                                                      ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography,
+                                                      $4)
+                                      ))
+        SELECT waypoint_id,
+               location_name,
+               estimated_arrival_time,
+               CASE
+                 WHEN near_start AND near_end THEN
                    CASE
-                       WHEN near_start AND near_end THEN 
-                           CASE WHEN sequence_order < (
-                               SELECT AVG(sequence_order) 
-                               FROM relevant_waypoints 
-                               WHERE near_start AND near_end
-                           ) THEN 'pickup' ELSE 'dropoff' END
-                       WHEN near_start THEN 'pickup'
-                       WHEN near_end THEN 'dropoff'
-                       ELSE 'intermediate'
-                   END as waypoint_purpose
-            FROM relevant_waypoints
-            ORDER BY sequence_order
-        `;
+                     WHEN sequence_order < (SELECT AVG(sequence_order)
+                                            FROM relevant_waypoints
+                                            WHERE near_start
+                                              AND near_end) THEN 'pickup'
+                     ELSE 'dropoff' END
+                 WHEN near_start THEN 'pickup'
+                 WHEN near_end THEN 'dropoff'
+                 ELSE 'intermediate'
+                 END as waypoint_purpose
+        FROM relevant_waypoints
+        ORDER BY sequence_order
+      `;
 
       values = [
         tripId,
@@ -605,22 +726,22 @@ class Trip {
       ];
     } else {
       query = `
-            SELECT tw.waypoint_id,
-                   tw.location_name,
-                   tw.estimated_arrival_time,
-                   'pickup' as waypoint_purpose
-            FROM trip_waypoints tw
-            WHERE tw.trip_id = $1
-              -- Use bounding box for faster initial filtering
-              AND tw.geopoint && ST_Envelope(
-                    ST_Expand(ST_SetSRID(ST_MakePoint($2, $3), 4326), $5)
-                  )
-              -- Then apply the actual distance filter
-              AND ST_DWithin(tw.geopoint::geography,
-                            ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography,
-                            $4)
-            ORDER BY tw.sequence_order
-        `;
+        SELECT tw.waypoint_id,
+               tw.location_name,
+               tw.estimated_arrival_time,
+               'pickup' as waypoint_purpose
+        FROM trip_waypoints tw
+        WHERE tw.trip_id = $1
+          -- Use bounding box for faster initial filtering
+          AND tw.geopoint && ST_Envelope(
+          ST_Expand(ST_SetSRID(ST_MakePoint($2, $3), 4326), $5)
+                             )
+          -- Then apply the actual distance filter
+          AND ST_DWithin(tw.geopoint::geography,
+                         ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography,
+                         $4)
+        ORDER BY tw.sequence_order
+      `;
 
       values = [tripId, startLng, startLat, radiusMeters, radiusDegrees];
     }

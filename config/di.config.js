@@ -20,9 +20,8 @@ const TripController = require('../controllers/trip.controller');
 const BookingController = require('../controllers/booking.controller');
 
 async function setupDependencies() {
-
   const dbClient = await db;
-  
+
   // Initialize Repositories
   const userRepository = new UserRepository(dbClient, pgp);
   const vehicleRepository = new VehicleRepository(dbClient);
@@ -68,7 +67,7 @@ async function setupDependencies() {
       vehicleRepository,
       tripRepository,
       bookingRepository,
-      waypointRepository
+      waypointRepository,
     },
   };
 }

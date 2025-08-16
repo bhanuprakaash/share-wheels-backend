@@ -2,9 +2,9 @@ const bcrypt = require('bcryptjs');
 const config = require('../config/env');
 
 class User {
-  constructor(dbClient, pgp){
+  constructor(dbClient, pgp) {
     this.db = dbClient;
-    this.pgp = pgp
+    this.pgp = pgp;
   }
 
   async create(user) {

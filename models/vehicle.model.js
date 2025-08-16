@@ -1,6 +1,5 @@
-
 class Vehicle {
-  constructor(dbClient){
+  constructor(dbClient) {
     this.db = dbClient;
   }
   async findById(vehicleId) {

@@ -5,7 +5,7 @@ class BookingService {
     this.userService = userService;
     this.tripService = tripService;
   }
-  
+
   async bookTrip(bookingData) {
     try {
       const { trip_id, rider_id, booked_seats, fare_amount } = bookingData;
@@ -168,13 +168,17 @@ class BookingService {
     }
   }
 
-  async onTripCancelled({tripId, transaction}) {
-    if(!transaction){
-      throw new Error("Transaction is required for booking cancellation");
+  async onTripCancelled({ tripId, transaction }) {
+    if (!transaction) {
+      throw new Error('Transaction is required for booking cancellation');
     }
-    try{
-      const activeBookings = await this.bookingRepository.getActiveBookingsByTripId(transaction, tripId);
-      for(const booking of activeBookings){
+    try {
+      const activeBookings =
+        await this.bookingRepository.getActiveBookingsByTripId(
+          transaction,
+          tripId
+        );
+      for (const booking of activeBookings) {
         await this.bookingRepository.updateBookingStatus(transaction, {
           trip_id: booking.trip_id,
           rider_id: booking.rider_id,
@@ -195,7 +199,7 @@ class BookingService {
           -Number(booking.fare_amount)
         );
       }
-    }catch (err){
+    } catch (err) {
       throw err;
     }
   }

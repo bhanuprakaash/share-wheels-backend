@@ -22,7 +22,7 @@ async function startServer() {
   try {
     await db.connect();
 
-    const {controllers} = await setupDependencies();
+    const { controllers } = await setupDependencies();
 
     const routes = require('./routes/index.routes')(controllers);
 

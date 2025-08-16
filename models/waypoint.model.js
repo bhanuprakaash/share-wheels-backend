@@ -1,17 +1,28 @@
 class Waypoint {
-
-  constructor(dbClient){
+  constructor(dbClient) {
     this.db = dbClient;
   }
 
   async addToTrip(dbOrTx = this.db, tripId, waypointData) {
     try {
       const query = `
-                INSERT INTO trip_waypoints (trip_id, location_name, address_line1, geopoint,
-                                            sequence_order, estimated_arrival_time)
-                VALUES ($1, $2, $3, ST_GeogFromText($4), $5, $6)
-                RETURNING *, ST_AsText(geopoint) as geopoint_text
-            `;
+        INSERT INTO trip_waypoints (trip_id, location_name, address_line1, geopoint,
+                                    sequence_order, estimated_arrival_time)
+        VALUES ($1, $2, $3, ST_GeogFromText($4), $5, $6)
+        RETURNING waypoint_id,
+          trip_id,
+          location_name,
+          address_line1,
+          json_build_object(
+            'lat', ST_Y(geopoint::geometry),
+            'lng', ST_X(geopoint::geometry)
+          ) AS geopoint,
+          sequence_order,
+          estimated_arrival_time,
+          actual_arrival_time,
+          created_at,
+          updated_at
+      `;
 
       return await dbOrTx.one(query, [
         tripId,
@@ -29,11 +40,23 @@ class Waypoint {
   async findByTripId(tripId) {
     try {
       const query = `
-                SELECT *
-                FROM trip_waypoints
-                WHERE trip_id = $1
-                ORDER BY sequence_order
-            `;
+        SELECT waypoint_id,
+               trip_id,
+               location_name,
+               address_line1,
+               json_build_object(
+                 'lat', ST_Y(geopoint::geometry),
+                 'lng', ST_X(geopoint::geometry)
+               ) AS geopoint,
+               sequence_order,
+               estimated_arrival_time,
+               actual_arrival_time,
+               created_at,
+               updated_at
+        FROM trip_waypoints
+        WHERE trip_id = $1
+        ORDER BY sequence_order
+      `;
 
       return await this.db.any(query, [tripId]);
     } catch (error) {
@@ -76,10 +99,23 @@ class Waypoint {
       params.push(waypointId); // Add waypointId to params for the WHERE clause
 
       const query = `
-                UPDATE trip_waypoints
-                SET ${updateFields.join(', ')}
-                WHERE waypoint_id = $${paramIndex}
-                RETURNING *, ST_AsText(geopoint) as geopoint_text
+        UPDATE trip_waypoints
+        SET ${updateFields.join(', ')}
+        WHERE waypoint_id = $${paramIndex}
+                RETURNING 
+                waypoint_id,
+               trip_id,
+               location_name,
+               address_line1,
+               json_build_object(
+                 'lat', ST_Y(geopoint::geometry),
+                 'lng', ST_X(geopoint::geometry)
+               ) AS geopoint,
+               sequence_order,
+               estimated_arrival_time,
+               actual_arrival_time,
+               created_at,
+               updated_at
             `;
 
       return await dbOrTx.oneOrNone(query, params);

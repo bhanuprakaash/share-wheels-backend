@@ -1,11 +1,9 @@
-
-class UserController  {
-
-  constructor(userService){
+class UserController {
+  constructor(userService) {
     this.userService = userService;
   }
 
-  createUser = async(req, res, next) =>{
+  createUser = async (req, res, next) => {
     try {
       const user = await this.userService.createUser(req.body);
       res.status(201).json({
@@ -16,8 +14,8 @@ class UserController  {
     } catch (err) {
       next(err);
     }
-  }
-  loginUser = async(req, res, next)=>{
+  };
+  loginUser = async (req, res, next) => {
     try {
       const { email, password } = req.body;
       const result = await this.userService.authenticateUser(email, password);
@@ -29,8 +27,8 @@ class UserController  {
     } catch (err) {
       next(err);
     }
-  }
-  getUser = async(req, res, next) => {
+  };
+  getUser = async (req, res, next) => {
     try {
       const { id } = req.params;
       const user = await this.userService.getUserById(id);
@@ -42,9 +40,9 @@ class UserController  {
     } catch (err) {
       next(err);
     }
-  }
-  getCurrentUser = async(req, res, next) => {
-    try{
+  };
+  getCurrentUser = async (req, res, next) => {
+    try {
       const userId = req.user.userId; // getting from token
       const user = await this.userService.getUserById(userId);
       res.json({
@@ -52,11 +50,11 @@ class UserController  {
         data: user,
         message: 'Current User Data Fetched Successfully',
       });
-    } catch (err){
+    } catch (err) {
       next(err);
     }
-  }
-  updateUser = async(req, res, next) =>{
+  };
+  updateUser = async (req, res, next) => {
     try {
       const { id } = req.params;
       const user = await this.userService.updateUser(id, req.body);
@@ -68,8 +66,8 @@ class UserController  {
     } catch (err) {
       next(err);
     }
-  }
-  deleteUser = async(req, res, next) =>{
+  };
+  deleteUser = async (req, res, next) => {
     try {
       const { id } = req.params;
       const result = await this.userService.deleteUser(id);
@@ -81,8 +79,8 @@ class UserController  {
     } catch (err) {
       next(err);
     }
-  }
-  updateUserPassword = async(req, res, next)=> {
+  };
+  updateUserPassword = async (req, res, next) => {
     try {
       const { id } = req.params;
       const { currentPassword, newPassword } = req.body;
@@ -99,11 +97,14 @@ class UserController  {
     } catch (err) {
       next(err);
     }
-  }
-  updateUserPreferences = async(req, res, next)=> {
+  };
+  updateUserPreferences = async (req, res, next) => {
     try {
       const { id } = req.params;
-      const preferences = await this.userService.updateUserPreferences(id, req.body);
+      const preferences = await this.userService.updateUserPreferences(
+        id,
+        req.body
+      );
       res.json({
         success: true,
         message: 'User Preferences Updated Successfully',
@@ -112,8 +113,8 @@ class UserController  {
     } catch (err) {
       next(err);
     }
-  }
-  getUserPreferences = async(req, res, next)=> {
+  };
+  getUserPreferences = async (req, res, next) => {
     try {
       const { id } = req.params;
       const preferences = await this.userService.getUserPreferences(id);
@@ -125,7 +126,7 @@ class UserController  {
     } catch (err) {
       next(err);
     }
-  }
+  };
   // registerFcmToken = async(req, res, next)=> {
   //   const { user_id } = req.params;
   //   try {

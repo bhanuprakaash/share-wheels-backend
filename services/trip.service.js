@@ -1,29 +1,27 @@
 class TripService {
-
-  constructor(tripRepository,dbClient) {
+  constructor(tripRepository, dbClient) {
     this.tripRepository = tripRepository;
     this.db = dbClient;
     this.observers = [];
   }
 
-  addObserver(observer){
-    if(!this.observers.includes(observer)){
+  addObserver(observer) {
+    if (!this.observers.includes(observer)) {
       this.observers.push(observer);
     }
   }
 
-  async notifyObservers(eventName, data){
-    for(const observer of this.observers){
-      if(typeof observer[eventName] === 'function'){
-        try{
+  async notifyObservers(eventName, data) {
+    for (const observer of this.observers) {
+      if (typeof observer[eventName] === 'function') {
+        try {
           await observer[eventName](data);
-        }catch(observerError){
+        } catch (observerError) {
           throw observerError;
         }
       }
     }
   }
-
 
   async createTrip(tripData, waypoints = []) {
     try {
@@ -43,9 +41,12 @@ class TripService {
 
       const processWaypoints = this._processWaypoints(waypoints);
 
-      const result = await this.tripRepository.create(tripData, processWaypoints);
+      const result = await this.tripRepository.create(
+        tripData,
+        processWaypoints
+      );
 
-      return { trip: result.trip, waypoints: result.waypoints };
+      return { ...result.trip, waypoints: result.waypoints };
     } catch (err) {
       throw err;
     }
@@ -58,6 +59,19 @@ class TripService {
         throw new Error('Trip not found');
       }
       return tripWithWaypoints;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  async getTripsByDriverId(driverId) {
+    try {
+      const tripsWithWaypoints =
+        await this.tripRepository.findTripByDriverId(driverId);
+      if (!tripsWithWaypoints) {
+        throw new Error('Trips not found');
+      }
+      return tripsWithWaypoints;
     } catch (err) {
       throw err;
     }
@@ -81,39 +95,61 @@ class TripService {
 
       const processedWaypoints = this._processWaypoints(waypoints);
 
-      return await this.tripRepository.update(tripId, tripData, processedWaypoints);
+      return await this.tripRepository.update(
+        tripId,
+        tripData,
+        processedWaypoints
+      );
     } catch (err) {
       throw err;
     }
   }
 
-  async updateTripStatus(tripId, status,transaction=undefined) {
+  async updateTripStatus(tripId, status, transaction = undefined) {
     try {
-      if(status === 'CANCELLED'){
-        return await this.db.tx(async(t)=>{
-          const updatedTrip = await this.tripRepository.updateByStatus(tripId, status,t);
-          await this.notifyObservers('onTripCancelled', {tripId: updatedTrip.trip_id, transaction: t})
+      if (status === 'CANCELLED') {
+        return await this.db.tx(async (t) => {
+          const updatedTrip = await this.tripRepository.updateByStatus(
+            tripId,
+            status,
+            t
+          );
+          await this.notifyObservers('onTripCancelled', {
+            tripId: updatedTrip.trip_id,
+            transaction: t,
+          });
           return updatedTrip;
-        })
+        });
       }
-     return await this.tripRepository.updateByStatus(tripId, status,transaction);
+      return await this.tripRepository.updateByStatus(
+        tripId,
+        status,
+        transaction
+      );
     } catch (err) {
       throw err;
     }
   }
 
-  async updateSeatsInTrip(dbInstance,tripId, bookedSeats){
-    try{
-      return await this.tripRepository.updateSeatsInTrip(dbInstance, tripId, bookedSeats);
-    }catch(err){
+  async updateSeatsInTrip(dbInstance, tripId, bookedSeats) {
+    try {
+      return await this.tripRepository.updateSeatsInTrip(
+        dbInstance,
+        tripId,
+        bookedSeats
+      );
+    } catch (err) {
       throw err;
     }
   }
 
-  async getAvailableSeats(transaction, tripId){
-    try{
-      return await this.tripRepository.getAvailableSeatsByTripId(transaction, tripId);
-    }catch(err){
+  async getAvailableSeats(transaction, tripId) {
+    try {
+      return await this.tripRepository.getAvailableSeatsByTripId(
+        transaction,
+        tripId
+      );
+    } catch (err) {
       throw err;
     }
   }
@@ -135,6 +171,11 @@ class TripService {
   }
 
   _validateAndConvertInputCoordinates(geopoint, fieldName) {
+    const pointRegex = /^POINT\(\s*-?\d+(\.\d+)?\s+-?\d+(\.\d+)?\s*\)$/i;
+    if (typeof geopoint === 'string' && pointRegex.test(geopoint)) {
+      return geopoint;
+    }
+
     if (typeof geopoint === 'object' && geopoint != null) {
       if (
         typeof geopoint.lat === 'number' &&
