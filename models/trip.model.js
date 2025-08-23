@@ -449,7 +449,8 @@ class Trip {
                t.end_location_name,
                t.trip_status,
                t.departure_time,
-               t.price_per_seat
+               t.price_per_seat,
+               t.available_seats
         FROM trips t
         WHERE t.polyline_path IS NOT NULL
       `;

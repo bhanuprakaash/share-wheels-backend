@@ -151,12 +151,15 @@ class TripController {
 
       res.status(200).json({
         success: true,
-        data: trips,
-        pagination: {
-          limit: filters.limit,
-          offset: filters.offset,
-          total: trips.length,
+        data: {
+          trips,
+          pagination: {
+            limit: filters.limit,
+            offset: filters.offset,
+            total: trips.length,
+          },
         },
+        message: 'Trips have been fetched successfully',
       });
     } catch (err) {
       next(err);
