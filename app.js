@@ -48,7 +48,7 @@ async function startServer() {
 
     const routes = require('./routes/index.routes')(controllers, repositories);
 
-    app.use('/api', routes);
+    app.use('/sharewheels/api', routes);
 
     app.use('*', (req, res) => {
       res.status(404).json({
