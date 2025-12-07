@@ -521,6 +521,8 @@ class Trip {
         query += ` AND t.trip_status = $${paramIndex}`;
         values.push(trip_status);
         paramIndex++;
+      } else {
+        query += ` AND t.trip_status NOT IN ('COMPLETED', 'CANCELLED')`;
       }
 
       if (departure_date) {

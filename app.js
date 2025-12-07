@@ -22,9 +22,9 @@ async function startServer() {
   try {
     await db.connect();
 
-    const { controllers } = await setupDependencies();
+    const { controllers, repositories } = await setupDependencies();
 
-    const routes = require('./routes/index.routes')(controllers);
+    const routes = require('./routes/index.routes')(controllers, repositories);
 
     app.use('/api', routes);
 

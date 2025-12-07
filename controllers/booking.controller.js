@@ -16,6 +16,34 @@ class BookingController {
     }
   };
 
+  getBookingsByUserId = async (req, res, next) => {
+    try {
+      const { riderId } = req.params;
+      const result = await this.bookingService.getBookingsByUserId(riderId);
+      return res.status(200).json({
+        success: true,
+        data: result,
+        message: 'Bookings Fetched Successfully',
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getBookingsByTripId = async (req, res, next) => {
+    try {
+      const { tripId } = req.params;
+      const result = await this.bookingService.getBookingsByTripId(tripId);
+      return res.status(200).json({
+        success: true,
+        data: result,
+        message: 'Bookings Fetched Successfully',
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
   updateBookingStatusByDriver = async (req, res, next) => {
     try {
       const { booking_id } = req.params;

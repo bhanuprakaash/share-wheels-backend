@@ -70,6 +70,26 @@ class BookingService {
     }
   }
 
+  async getBookingsByUserId(riderId) {
+    try {
+      const rides = await this.bookingRepository.getBookingsByUserId(riderId);
+      if (!rides) {
+        throw new Error('No bookings found');
+      }
+      return rides;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  async getBookingsByTripId(tripId) {
+    try {
+      return await this.bookingRepository.getBookingsByTripId(tripId);
+    } catch (err) {
+      throw err;
+    }
+  }
+
   async updateBookingStatusByDriver(bookingData) {
     const { booking_id, booking_status } = bookingData;
 
@@ -283,10 +303,13 @@ class BookingService {
   }
 
   async _handleConfirmation(transaction, bookingData) {
-    const { booking_id, driver_id } = bookingData;
+    const { booking_id } = bookingData;
     const currentBookingDetails = await this.bookingRepository.getBookingById(
       transaction,
       booking_id
+    );
+    const tripDetails = await this.tripService.getTripById(
+      currentBookingDetails.trip_id
     );
     if (!currentBookingDetails)
       throw new Error('Unable to fetch Booking Details');
@@ -301,7 +324,7 @@ class BookingService {
       ),
       this.userService.updateUserBalance(
         transaction,
-        driver_id,
+        tripDetails.driver_id,
         'wallet',
         Number(fare_amount)
       ),

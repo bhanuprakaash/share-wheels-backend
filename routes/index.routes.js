@@ -6,7 +6,7 @@ const bookingRoutes = require('./booking.routes');
 
 const router = express.Router();
 
-module.exports = ({ ...controllers }) => {
+module.exports = (controllers, repositories) => {
   const {
     bookingController,
     tripController,
@@ -17,7 +17,7 @@ module.exports = ({ ...controllers }) => {
   router.use('/user', userRoutes({ userController }));
   router.use('/vehicle', vehicleRoutes({ vehicleController }));
   router.use('/trip', tripRoutes({ tripController }));
-  router.use('/booking', bookingRoutes({ bookingController }));
+  router.use('/booking', bookingRoutes({ bookingController, repositories }));
 
   router.get('/health', (req, res) => {
     res.json({

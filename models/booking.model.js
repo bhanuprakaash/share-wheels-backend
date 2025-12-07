@@ -7,27 +7,66 @@ class Booking {
       const {
         trip_id,
         rider_id,
-        start_geopoint,
-        end_geopoint,
+        // start_geopoint,
+        // end_geopoint,
         booked_seats,
         fare_amount,
+        is_waypoint_booking,
+        waypoint_data,
       } = bookingData;
 
       const bookingQuery = `
-          INSERT INTO bookings (trip_id, rider_id, start_geopoint, end_geopoint, booked_seats, fare_amount)
-          VALUES ($1, $2, $3, $4, $5, $6)
+          INSERT INTO bookings (trip_id, rider_id, booked_seats, fare_amount, is_waypoint_booking,waypoint_data )
+          VALUES ($1, $2, $3, $4, $5, $6::jsonb)
           RETURNING *
         `;
       const booking = await transaction.one(bookingQuery, [
         trip_id,
         rider_id,
-        start_geopoint,
-        end_geopoint,
         booked_seats,
         fare_amount,
+        is_waypoint_booking,
+        JSON.stringify(waypoint_data),
       ]);
 
       return booking;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  async getBookingsByUserId(riderId) {
+    try {
+      const query = `
+      SELECT booking_id,
+             trip_id,
+             rider_id,
+             booked_seats,
+             fare_amount,
+             bookings_status,
+             is_waypoint_booking,
+             waypoint_data,
+             created_at,
+             updated_at
+      FROM bookings
+      WHERE rider_id = $1
+      ORDER BY created_at DESC;
+    `;
+      return await this.db.any(query, [riderId]);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getBookingsByTripId(tripId) {
+    try {
+      const query = `
+        SELECT *
+        FROM bookings
+        WHERE trip_id = $1
+        ORDER BY created_at DESC
+      `;
+      return await this.db.any(query, [tripId]);
     } catch (err) {
       throw err;
     }
