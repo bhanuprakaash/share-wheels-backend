@@ -36,7 +36,6 @@ services:
       - redis_data:/data
     networks:
       - dev-network
-    command: redis-server --requirepass ${REDIS_PASSWORD}
 
   app:
     build:
