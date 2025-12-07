@@ -17,11 +17,11 @@ module.exports = ({ userController }) => {
   router.delete('/:id', userController.deleteUser);
   router.put('/preferences/:id', userController.updateUserPreferences);
   router.get('/preferences/:id', userController.getUserPreferences);
-  // router.post('/register-fcm-token/:user_id', userController.registerFcmToken);
-  // router.post(
-  //   '/unregister-fcm-token/:user_id',
-  //   userController.unRegisterFcmToken
-  // );
+  router.post('/register-fcm-token/:user_id', userController.registerFcmToken);
+  router.post(
+    '/unregister-fcm-token/:user_id',
+    userController.unRegisterFcmToken
+  );
 
   return router;
 };

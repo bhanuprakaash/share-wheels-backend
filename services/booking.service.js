@@ -1,9 +1,10 @@
 class BookingService {
-  constructor(bookingRepository, dbClient, userService, tripService) {
+  constructor(bookingRepository, dbClient, userService, tripService, notificationService) {
     this.bookingRepository = bookingRepository;
     this.dbClient = dbClient;
     this.userService = userService;
     this.tripService = tripService;
+    this.notificationService = notificationService;
   }
 
   async bookTrip(bookingData) {
@@ -23,6 +24,8 @@ class BookingService {
             'Invalid booked_seats provided. Must be a positive number.'
           );
         }
+
+        const { driver_id } = await this.tripService.getTripById(trip_id)
 
         // check: rider balance and available seats on the trip
         const balanceResult = await this.userService.getUserWalletBalance(
@@ -62,6 +65,11 @@ class BookingService {
           'wallet',
           -Number(actualFareAmount)
         );
+
+
+        if (booking && booking.bookings_status === 'PENDING') {
+          this.notificationService.sendNewBookingRequest(driver_id, booking)
+        }
 
         return booking;
       });
@@ -139,6 +147,8 @@ class BookingService {
             );
           }
         }
+
+        this.notificationService.sendBookingStatusUpdateToRider(rider_id, driverResponse);
         return driverResponse;
       });
     } catch (err) {
@@ -154,7 +164,12 @@ class BookingService {
           case 'CANCELLED':
             return await this._handleCancellation(transaction, bookingData);
           case 'COMPLETED':
-            return await this._handleConfirmation(transaction, bookingData);
+            const response = await this._handleConfirmation(transaction, bookingData);
+            this.notificationService.sendTripFinalizedConfirmation(response.driver_id, {
+              ...bookingData,
+              ...response
+            });
+            return response;
           default:
             throw new Error('Invalid status update requested!');
         }
@@ -341,6 +356,7 @@ class BookingService {
     await transaction.batch(updates);
     return {
       booking: booking_id,
+      driver_id: tripDetails.driver_id,
     };
   }
 }

@@ -26,6 +26,18 @@ services:
     networks:
       - dev-network
 
+  redis:
+    image: redis:alpine
+    container_name: dev_redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - dev-network
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+
   app:
     build:
       context: .
@@ -44,23 +56,52 @@ services:
       DB_URL: ${DB_URL}
       JWT_SECRET: ${JWT_SECRET}
       BCRYPT_ROUNDS: ${BCRYPT_ROUNDS}
-
+      REDIS_HOST: ${REDIS_HOST} 
+      REDIS_PORT: ${REDIS_PORT}
     ports:
       - '3001:3001'
-
     volumes:
       - .:/app:delegated
       - /app/node_modules
-
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - dev-network
 
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["node", "workers/notificationWorker.js"] 
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      DB_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+    volumes:
+      - .:/app:delegated
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - dev-network
 
 volumes:
   postgres_dev_data:
+    driver: local
+  redis_data: 
     driver: local
 
 networks:

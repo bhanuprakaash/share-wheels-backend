@@ -23,4 +23,6 @@ module.exports = {
   FCM_AUTH_PROVIDER_CERT_URL: process.env.FCM_AUTH_PROVIDER_CERT_URL,
   FCM_CLIENT_CERT_URL: process.env.FCM_CLIENT_CERT_URL,
   FCM_UNIVERSE_DOMAIN: process.env.FCM_UNIVERSE_DOMAIN,
+  REDIS_HOST: process.env.REDIS_HOST,
+  REDIS_PORT: process.env.REDIS_PORT,
 };

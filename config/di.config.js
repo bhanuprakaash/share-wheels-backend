@@ -12,6 +12,7 @@ const UserService = require('../services/user.service');
 const VehicleService = require('../services/vehicle.service');
 const TripService = require('../services/trip.service');
 const BookingService = require('../services/booking.service');
+const notificationService = require('../services/notification.service');
 
 //Controllers
 const UserController = require('../controllers/user.controller');
@@ -37,7 +38,8 @@ async function setupDependencies() {
     bookingRepository,
     dbClient,
     userService,
-    tripService
+    tripService,
+    notificationService
   );
 
   //Observers
@@ -48,6 +50,7 @@ async function setupDependencies() {
   const vehicleController = new VehicleController(vehicleService);
   const tripController = new TripController(tripService);
   const bookingController = new BookingController(bookingService);
+
 
   return {
     controllers: {

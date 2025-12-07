@@ -1,5 +1,5 @@
 const admin = require('../config/firebaseAdmin');
-const UserService = require('../services/user.service');
+const { notificationQueue } = require('../config/queue');
 
 class NotificationService {
   constructor() {
@@ -10,53 +10,19 @@ class NotificationService {
     }
   }
 
-  async sendNotificationToUser(userId, notificationPayload, dataPayload) {
-    console.log(userId, notificationPayload, dataPayload);
-    if (!admin.apps.length) {
-      console.error(
-        'Firebase Admin SDK not initialized. Cannot send notifications.'
-      );
-      throw new Error(
-        'Firebase Admin SDK not initialized. Cannot send notifications.'
-      );
-    }
-    try {
-      const user = await UserService.getUserById(userId);
-      if (!user || !user.fcm_tokens || user.fcm_tokens.length === 0) {
-        throw new Error('No FCM tokens found');
-      }
-      const message = {
-        notification: notificationPayload,
-        data: {
-          ...dataPayload,
-          notificationType: dataPayload.type || 'GENERIC',
-        },
-        tokens: user.fcm_tokens,
-      };
-      const response = await admin.messaging().sendEachForMulticast(message);
-      if (response.failureCount > 0) {
-        let tokensToRemove = [];
-        response.responses.forEach((resp, index) => {
-          console.error(
-            `Error sending to token ${user.fcm_tokens[index]}`,
-            resp.error
-          );
-          if (
-            resp.error.code === 'messaging/registration-token-not-registered' ||
-            resp.error.code === 'messaging/invalid-argument' ||
-            resp.error.code === 'messaging/not-foung'
-          ) {
-            tokensToRemove.push(user.fcm_tokens[index]);
-          }
-        });
-        if (tokensToRemove.length > 0) {
-          await UserService.removeFcmTokens(userId, tokensToRemove);
-        }
-      }
-      return response;
-    } catch (err) {
-      throw err;
-    }
+  async _addToQueue(userId, notificationPayload, dataPayload) {
+    await notificationQueue.add('send-notification', {
+      userId,
+      notificationPayload,
+      dataPayload
+    }, {
+      removeOnComplete: true,
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 1000,
+      },
+    });
   }
 
   async sendNewBookingRequest(driverId, bookingDetails) {
@@ -71,14 +37,10 @@ class NotificationService {
       riderId: bookingDetails.rider_id.toString(),
       status: bookingDetails.bookings_status,
     };
-    await this.sendNotificationToUser(
-      driverId,
-      notificationPayload,
-      dataPayload
-    );
+    await this._addToQueue(driverId, notificationPayload, dataPayload);
   }
 
-  async sendBookingStatusUpdate(riderId, bookingDetails) {
+  async sendBookingStatusUpdateToRider(rider_id, bookingDetails) {
     const statusText =
       bookingDetails.bookings_status === 'ACCEPTED' ? 'Accepted' : 'Rejected';
     const notificationPayload = {
@@ -87,16 +49,8 @@ class NotificationService {
     };
     const dataPayload = {
       type: 'BOOKING_STATUS_UPDATE',
-      bookingId: bookingDetails.booking_id.toString(),
-      tripId: bookingDetails.trip_id.toString(),
-      status: bookingDetails.bookings_status,
-      driverId: bookingDetails.driver_id.toString(),
     };
-    await this.sendNotificationToUser(
-      riderId,
-      notificationPayload,
-      dataPayload
-    );
+    await this._addToQueue(rider_id, notificationPayload, dataPayload);
   }
 
   async sendRiderCancellationRequest(driverId, tripDetails) {
@@ -109,11 +63,7 @@ class NotificationService {
       type: 'BOOKING_CANCELLATION_UPDATE',
       bookingId: booking_id,
     };
-    await this.sendNotificationToUser(
-      driverId,
-      notificationPayload,
-      dataPayload
-    );
+    await this._addToQueue(driverId, notificationPayload, dataPayload);
   }
 
   async sendTripCompletionRequest(riderId, tripDetails) {
@@ -126,39 +76,18 @@ class NotificationService {
       tripId: tripDetails.trip_id.toString(),
       driverId: tripDetails.driver_id.toString(),
     };
-    await this.sendNotificationToUser(
-      riderId,
-      notificationPayload,
-      dataPayload
-    );
+    await this._addToQueue(riderId, notificationPayload, dataPayload);
   }
 
   async sendTripFinalizedConfirmation(driverId, tripDetails) {
     const notificationPayload = {
       title: 'Trip Confirmed By Rider!',
-      body: `Your Trip with ${tripDetails.riderName || 'the driver'} has been confirmed.`,
+      body: `Your Trip with ${tripDetails.riderName || 'the rider'} has been confirmed.`,
     };
     const dataPayload = {
       type: 'TRIP_FINALIZED_CONFIRMATION',
-      tripId: tripDetails.trip_id,
-      riderId: tripDetails.rider_id,
     };
-  }
-
-  async registerFcmToken(userId, fcmToken) {
-    try {
-      await UserService.addNewFcmToken(userId, fcmToken);
-    } catch (err) {
-      throw err;
-    }
-  }
-
-  async unregisterFcmToken(userId, fcmToken) {
-    try {
-      await UserService.removeFcmTokens(userId, [fcmToken]);
-    } catch (err) {
-      throw err;
-    }
+    await this._addToQueue(driverId, notificationPayload, dataPayload);
   }
 }
 

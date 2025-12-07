@@ -127,36 +127,30 @@ class UserController {
       next(err);
     }
   };
-  // registerFcmToken = async(req, res, next)=> {
-  //   const { user_id } = req.params;
-  //   try {
-  //     await NotificationService.registerFcmToken({
-  //       ...req.body,
-  //       userId: user_id,
-  //     });
-  //     res.status(200).json({
-  //       success: true,
-  //       message: 'FCM token registered Successfully',
-  //     });
-  //   } catch (err) {
-  //     next(err);
-  //   }
-  // }
-  // unRegisterFcmToken = async(req, res, next)=> {
-  //   const { user_id } = req.params;
-  //   try {
-  //     await NotificationService.unregisterFcmToken({
-  //       ...req.body,
-  //       userId: user_id,
-  //     });
-  //     res.status(200).json({
-  //       success: true,
-  //       message: 'FCM token unregistered successfully',
-  //     });
-  //   } catch (err) {
-  //     next(err);
-  //   }
-  // }
+  registerFcmToken = async (req, res, next) => {
+    const { user_id } = req.params;
+    try {
+      await this.userService.addNewFcmToken(user_id, req.body.fcmToken);
+      res.status(200).json({
+        success: true,
+        message: 'FCM token registered Successfully',
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+  unRegisterFcmToken = async (req, res, next) => {
+    const { user_id } = req.params;
+    try {
+      await this.userService.removeFcmTokens(user_id, req.body.fcmToken);
+      res.status(200).json({
+        success: true,
+        message: 'FCM token unregistered successfully',
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 module.exports = UserController;

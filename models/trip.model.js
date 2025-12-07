@@ -522,7 +522,7 @@ class Trip {
         values.push(trip_status);
         paramIndex++;
       } else {
-        query += ` AND t.trip_status NOT IN ('COMPLETED', 'CANCELLED')`;
+        query += ` AND t.trip_status NOT IN ('COMPLETED', 'CANCELLED', 'IN_PROGRESS')`;
       }
 
       if (departure_date) {

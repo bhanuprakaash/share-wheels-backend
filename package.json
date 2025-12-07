@@ -5,6 +5,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
+    "worker": "node workers/notificationWorker.js",
     "start:dev": "cross-env NODE_ENV=development nodemon app.js",
     "start:prod": "cross-env NODE_ENV=production node app.js",
     "docker:dev": "docker compose --env-file .env.dev up --build",
@@ -14,6 +15,7 @@
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "bullmq": "^5.65.1",
     "cors": "^2.8.5",
     "cross-env": "^7.0.3",
     "debug": "~2.6.9",
@@ -21,6 +23,7 @@
     "express": "~4.16.1",
     "firebase-admin": "^13.4.0",
     "helmet": "^8.1.0",
+    "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "pg-promise": "^11.14.0"
