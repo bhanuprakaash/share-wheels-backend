@@ -41,9 +41,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Lowercase Repo Name
         run: |
           echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: Copy docker-compose.yml via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "compose.yaml"
+          target: "~/share-wheels-backend/"
 
       - name: Deploy to VM via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -53,18 +65,15 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           envs: GITHUB_TOKEN, IMAGE_NAME, REGISTRY
           script: |
-            # 1. Go to project folder
-            cd share-wheels-backend
+            cd ~/share-wheels-backend
             
-            # 2. Log in to Registry (using the token passed from GitHub)
+            # Log in to Pull the image
             echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
-            # 3. Pull the new image
+            # Pull the new image
             sudo docker pull ghcr.io/${{ env.IMAGE_NAME }}:latest
             
-            # 4. Restart containers
-            # We use the IMAGE_TAG=latest from .env.prod, or we can force it here
+            # Restart using the NEWLY COPIED compose file
             sudo docker compose --env-file .env.prod up -d
             
-            # 5. Cleanup
             sudo docker image prune -f

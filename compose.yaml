@@ -2,107 +2,120 @@ services:
   postgres:
     image: postgis/postgis:17-3.5-alpine
     platform: linux/amd64
-    container_name: dev_postgres
+    container_name: prod_postgres
     restart: unless-stopped
-
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-
     ports:
       - '5432:5432'
-
     volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
-
+      - postgres_prod_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
       interval: 10s
       timeout: 5s
       retries: 5
-
     networks:
-      - dev-network
+      - prod-network
 
   redis:
     image: redis:alpine
-    container_name: dev_redis
+    container_name: prod_redis
     restart: unless-stopped
     ports:
       - '6379:6379'
     volumes:
-      - redis_data:/data
+      - redis_prod_data:/data
     networks:
-      - dev-network
+      - prod-network
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/bhanuprakaash/share-wheels-backend:${IMAGE_TAG:-latest}
     container_name: share_wheels_server
     restart: unless-stopped
-
     environment:
       NODE_ENV: ${NODE_ENV}
       PORT: ${PORT}
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
       DB_NAME: ${POSTGRES_DB}
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
-      DB_URL: ${DB_URL}
+      DB_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_HOST}:${DB_PORT}/${POSTGRES_DB}?sslmode=disable
       JWT_SECRET: ${JWT_SECRET}
       BCRYPT_ROUNDS: ${BCRYPT_ROUNDS}
-      REDIS_HOST: ${REDIS_HOST} 
+      REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
+      FCM_TYPE: ${FCM_TYPE}
+      FCM_PROJECT_ID: ${FCM_PROJECT_ID}
+      FCM_PRIVATE_KEY_ID: ${FCM_PRIVATE_KEY_ID}
+      FCM_PRIVATE_KEY: ${FCM_PRIVATE_KEY}
+      FCM_CLIENT_EMAIL: ${FCM_CLIENT_EMAIL}
+      FCM_CLIENT_ID: ${FCM_CLIENT_ID}
+      FCM_AUTH_URI: ${FCM_AUTH_URI}
+      FCM_TOKEN_URI: ${FCM_TOKEN_URI}
+      FCM_AUTH_PROVIDER_CERT_URL: ${FCM_AUTH_PROVIDER_CERT_URL}
+      FCM_CLIENT_CERT_URL: ${FCM_CLIENT_CERT_URL}
+      FCM_UNIVERSE_DOMAIN: ${FCM_UNIVERSE_DOMAIN}
     ports:
       - '3001:3001'
-    volumes:
-      - .:/app:delegated
-      - /app/node_modules
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
     networks:
-      - dev-network
-
+      - prod-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/sharewheels/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/bhanuprakaash/share-wheels-backend:${IMAGE_TAG:-latest}
+    container_name: share_wheels_worker
     restart: unless-stopped
-    command: ["node", "workers/notificationWorker.js"] 
+    command: ["node", "workers/notificationWorker.js"]
     environment:
       NODE_ENV: ${NODE_ENV}
-      DB_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DB_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_HOST}:${DB_PORT}/${POSTGRES_DB}?sslmode=disable
       DB_PORT: 5432
       DB_NAME: ${POSTGRES_DB}
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
-    volumes:
-      - .:/app:delegated
-      - /app/node_modules
+      FCM_TYPE: ${FCM_TYPE}
+      FCM_PROJECT_ID: ${FCM_PROJECT_ID}
+      FCM_PRIVATE_KEY_ID: ${FCM_PRIVATE_KEY_ID}
+      FCM_PRIVATE_KEY: ${FCM_PRIVATE_KEY}
+      FCM_CLIENT_EMAIL: ${FCM_CLIENT_EMAIL}
+      FCM_CLIENT_ID: ${FCM_CLIENT_ID}
+      FCM_AUTH_URI: ${FCM_AUTH_URI}
+      FCM_TOKEN_URI: ${FCM_TOKEN_URI}
+      FCM_AUTH_PROVIDER_CERT_URL: ${FCM_AUTH_PROVIDER_CERT_URL}
+      FCM_CLIENT_CERT_URL: ${FCM_CLIENT_CERT_URL}
+      FCM_UNIVERSE_DOMAIN: ${FCM_UNIVERSE_DOMAIN}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
     networks:
-      - dev-network
+      - prod-network
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep node | grep -v grep"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
-  postgres_dev_data:
-    driver: local
-  redis_data: 
-    driver: local
+  postgres_prod_data:
+  redis_prod_data:
 
 networks:
-  dev-network:
+  prod-network:
     driver: bridge
