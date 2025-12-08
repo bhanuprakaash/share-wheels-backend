@@ -153,3 +153,11 @@ CREATE INDEX idx_trips_polyline_gist ON public.trips USING gist (polyline_path);
 --trip-waypoints indexes
 CREATE INDEX idx_trip_waypoints_location_gist ON public.trip_waypoints USING gist (geopoint);
 CREATE INDEX idx_trip_waypoints_trip_order ON public.trip_waypoints USING btree (trip_id, sequence_order);
+
+
+ALTER TABLE
+    bookings
+ADD
+    COLUMN is_waypoint_booking BOOLEAN NOT NULL DEFAULT false,
+ADD
+    COLUMN waypoint_data JSONB NOT NULL DEFAULT '{}' :: jsonb;
