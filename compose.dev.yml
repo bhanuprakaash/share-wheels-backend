@@ -1,0 +1,103 @@
+services:
+  postgres:
+    image: postgis/postgis:17-3.5-alpine
+    container_name: dev_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sharewheels_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-devuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-devuser} -d ${POSTGRES_DB:-sharewheels_dev}']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - dev-network
+
+  redis:
+    image: redis:alpine
+    container_name: dev_redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - dev-network`
+
+  app:
+    build: .
+    container_name: share_wheels_server_dev
+    command: ["npm", "run", "dev"]
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DB_HOST: postgres
+      REDIS_HOST: redis
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-sharewheels_dev}
+      DB_USER: ${POSTGRES_USER:-devuser}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+      JWT_SECRET: ${JWT_SECRET}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS}
+      
+    ports:
+      - '3001:3001'
+    volumes:
+      - .:/usr/src/app # Mount local code for instant updates
+      - /usr/src/app/node_modules # Prevents host node_modules from overwriting container
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - dev-network
+    
+  worker:
+    build: . # Build the image from the local Dockerfile
+    container_name: share_wheels_worker_dev
+    command: ["node", "workers/notificationWorker.js"]
+    environment:
+      NODE_ENV: development
+      # --- FIX: Use service names for inter-container communication ---
+      DB_HOST: postgres
+      REDIS_HOST: redis
+      # --- Ensure these are also correctly passed ---
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-sharewheels_dev}
+      DB_USER: ${POSTGRES_USER:-devuser}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+      FCM_TYPE: ${FCM_TYPE}
+      FCM_PROJECT_ID: ${FCM_PROJECT_ID}
+      FCM_PRIVATE_KEY_ID: ${FCM_PRIVATE_KEY_ID}
+      FCM_PRIVATE_KEY: ${FCM_PRIVATE_KEY}
+      FCM_CLIENT_EMAIL: ${FCM_CLIENT_EMAIL}
+      FCM_CLIENT_ID: ${FCM_CLIENT_ID}
+      FCM_AUTH_URI: ${FCM_AUTH_URI}
+      FCM_TOKEN_URI: ${FCM_TOKEN_URI}
+      FCM_AUTH_PROVIDER_CERT_URL: ${FCM_AUTH_PROVIDER_CERT_URL}
+      FCM_CLIENT_CERT_URL: ${FCM_CLIENT_CERT_URL}
+      FCM_UNIVERSE_DOMAIN: ${FCM_UNIVERSE_DOMAIN}
+      DB_URL: postgres://postgres:bhanu@postgres:5432/share_wheels
+      
+    volumes:
+      - .:/usr/src/app # Mount local code
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - dev-network
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+
+networks:
+  dev-network:
+    driver: bridge

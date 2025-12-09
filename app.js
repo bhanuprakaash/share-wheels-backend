@@ -3,20 +3,20 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const Server = require('socket.io');
 
 const errorHandler = require('./middleware/errorHandler');
 const config = require('./config/env');
 const db = require('./config/db');
 const setupDependencies = require('./config/di.config');
+const { setupRealTimeHandlers } = require('./workers/setupHandlers');
 const app = express();
+const { connection } = require('./config/queue');
+const { allowedOrigins } = require('./config/cors');
 
 let server;
+let io;
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://sharewheels.bhanuprakashsai.com',
-];
 
 // Rate limiting middleware
 const globalLimiter = rateLimit({
@@ -59,7 +59,7 @@ async function startServer() {
     const { controllers, repositories } = await setupDependencies();
 
     const routes = require('./routes/index.routes')(controllers, repositories);
-    
+
     app.set('trust proxy', 1);
 
     app.use('/sharewheels/api', routes);
@@ -74,6 +74,8 @@ async function startServer() {
 
     server = app.listen(config.PORT, () => {
       console.log(`Server listening on port ${config.PORT}`);
+
+      setupRealTimeHandlers(server, connection);
     });
   } catch (err) {
     console.error('Failed to start server: ', err.message);

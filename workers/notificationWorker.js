@@ -1,13 +1,15 @@
 const { Worker } = require('bullmq');
 const admin = require('../config/firebaseAdmin');
 const { connection } = require('../config/queue');
+const Redis = require('ioredis');
 
-// 1. Import Config and Classes
 const { db: dbPromise, pgp } = require('../config/db');
 const UserService = require('../services/user.service');
 const UserRepository = require('../models/user.model');
 
-// 2. Wrap initialization in an async function (Required because DB connect is async)
+let publisher;
+const PUSH_CHANNEL = 'notifications:new';
+
 (async () => {
   try {
     console.log('---------------------------------------------------');
@@ -18,18 +20,20 @@ const UserRepository = require('../models/user.model');
       status: connection.status,
     });
 
-    // 3. Wait for Database Connection
+    publisher = new Redis(connection.options);
+    publisher.on('error', (err) =>
+      console.error('[Publisher Error] Redis:', err)
+    );
+
     console.log('[Worker Init] Connecting to Database...');
-    const dbClient = await dbPromise; // This resolves the Promise from db.js
+    const dbClient = await dbPromise;
     console.log('[Worker Init] Database Connected Successfully!');
 
-    // 4. Instantiate Repository and Service
     const userRepository = new UserRepository(dbClient, pgp);
     const userService = new UserService(userRepository);
     console.log('[Worker Init] UserService & Repository initialized.');
     console.log('---------------------------------------------------');
 
-    // 5. Define the Worker
     const worker = new Worker(
       'notification-queue',
       async (job) => {
@@ -37,11 +41,9 @@ const UserRepository = require('../models/user.model');
         console.log(`\n[Job ${jobId}] STARTING PROCESSING -----------------`);
 
         try {
-          // Extract data passed from the Service
           const { userId, notificationPayload, dataPayload } = job.data;
           console.log(`[Job ${jobId}] Target User ID: ${userId}`);
 
-          // A. Check Admin SDK
           if (!admin.apps.length) {
             console.error(
               `[Job ${jobId}]  FATAL: Firebase Admin SDK not initialized.`
@@ -49,7 +51,6 @@ const UserRepository = require('../models/user.model');
             throw new Error('Firebase Admin SDK not initialized.');
           }
 
-          // B. Fetch User & Tokens using the initialized Service Instance
           console.log(`[Job ${jobId}] Fetching user details from DB...`);
           const user = await userService.getUserById(userId);
 
@@ -75,7 +76,6 @@ const UserRepository = require('../models/user.model');
             `[Job ${jobId}] Found ${user.fcm_tokens.length} FCM token(s). Preparing message...`
           );
 
-          // C. Construct Message
           const message = {
             notification: notificationPayload,
             data: {
@@ -85,7 +85,6 @@ const UserRepository = require('../models/user.model');
             tokens: user.fcm_tokens,
           };
 
-          // D. Send to Firebase
           console.log(
             `[Job ${jobId}] 🚀 Sending to Firebase Cloud Messaging...`
           );
@@ -98,7 +97,6 @@ const UserRepository = require('../models/user.model');
             failureCount: response.failureCount,
           });
 
-          // E. Handle Invalid Tokens (Cleanup)
           if (response.failureCount > 0) {
             console.log(
               `[Job ${jobId}]  Handling ${response.failureCount} failed deliveries...`
@@ -108,7 +106,6 @@ const UserRepository = require('../models/user.model');
             response.responses.forEach((resp, index) => {
               if (!resp.success) {
                 const error = resp.error;
-                // Log the error code for debugging
                 console.error(
                   `[Job ${jobId}] Token Error [${index}]:`,
                   error.code
@@ -134,13 +131,29 @@ const UserRepository = require('../models/user.model');
             }
           }
 
-          console.log(
-            `[Job ${jobId}] FINISHED PROCESSING -----------------`
-          );
+          if (response.successCount > 0) {
+            const realtimePayload = {
+              userId: userId,
+              ...notificationPayload,
+              ...dataPayload,
+              sentAt: new Date().toISOString(),
+            };
+
+            if (publisher.status !== 'ready') {
+              console.error('Redis Publisher is NOT ready!');
+            }
+
+            await publisher.publish(
+              PUSH_CHANNEL,
+              JSON.stringify(realtimePayload)
+            );
+          }
+
+          console.log(`[Job ${jobId}] FINISHED PROCESSING -----------------`);
           return response;
         } catch (err) {
           console.error(`[Job ${jobId}]  CRITICAL ERROR:`, err);
-          throw err; // Triggers BullMQ retry mechanism
+          throw err;
         }
       },
       {
@@ -151,9 +164,7 @@ const UserRepository = require('../models/user.model');
 
     // 6. Setup Worker Event Listeners
     worker.on('ready', () => {
-      console.log(
-        '[Worker Event]  Worker is ready and waiting for jobs.'
-      );
+      console.log('[Worker Event]  Worker is ready and waiting for jobs.');
     });
 
     worker.on('error', (err) => {
