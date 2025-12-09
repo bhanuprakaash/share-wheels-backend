@@ -49,7 +49,7 @@ The system operates as a decoupled microservice structure orchestrated by Docker
 |                                                                               |
 +-------------------------------------------------------------------------------+
 
-
+```
 ### 1. Overall Service Topology
 
 | Service | Technology | Primary Role |
