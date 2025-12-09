@@ -161,3 +161,8 @@ ADD
     COLUMN is_waypoint_booking BOOLEAN NOT NULL DEFAULT false,
 ADD
     COLUMN waypoint_data JSONB NOT NULL DEFAULT '{}' :: jsonb;
+
+
+ALTER TABLE
+    public.bookings DROP COLUMN start_geopoint,
+    DROP COLUMN end_geopoint;
