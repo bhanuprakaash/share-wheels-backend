@@ -4,9 +4,17 @@ const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 module.exports = ({ userController }) => {
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 5,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: 'Too many login attempts. Please try again after 15 minutes.',
+  });
+
   //public routes
-  router.post('/signup', userController.createUser);
-  router.post('/login', userController.loginUser);
+  router.post('/signup', authLimiter, userController.createUser);
+  router.post('/login', authLimiter, userController.loginUser);
 
   //private routes
   router.use(authenticateToken);

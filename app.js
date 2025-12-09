@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
 
 const errorHandler = require('./middleware/errorHandler');
 const config = require('./config/env');
@@ -16,6 +17,16 @@ const allowedOrigins = [
   'http://localhost:3000',
   'https://sharewheels.bhanuprakashsai.com',
 ];
+
+// Rate limiting middleware
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 100,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: 'Too many requests, please try again after 15 minutes.',
+  statusCode: 429,
+});
 
 // Security middleware
 app.use(helmet());
@@ -39,6 +50,7 @@ app.use(
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(globalLimiter);
 
 async function startServer() {
   try {
@@ -47,6 +59,8 @@ async function startServer() {
     const { controllers, repositories } = await setupDependencies();
 
     const routes = require('./routes/index.routes')(controllers, repositories);
+    
+    app.set('trust proxy', 1);
 
     app.use('/sharewheels/api', routes);
 
